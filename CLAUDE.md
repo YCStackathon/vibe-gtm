@@ -41,6 +41,11 @@ npm run lint         # Lint
 - Backend uses pydantic-settings with `.env` file support
 - Frontend env vars must be prefixed with `VITE_`
 
+## Git Rules
+
+- Never commit or push without explicit user request
+- Always show changes and wait for approval before committing
+
 ## Deployment
 
 Render Blueprint (`render.yaml`) deploys both services:
