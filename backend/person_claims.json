@@ -1,0 +1,115 @@
+{
+  "hobbies": [
+    {
+      "name": "Home Remodeling",
+      "description": "Nicolas mentioned that his current personal project is 'home remodeling' - a hands-on hobby he pursues outside of work.",
+      "source": "YouTube interview"
+    },
+    {
+      "name": "Home Automation/Technical Projects",
+      "description": "He expressed interest in technical side projects involving home automation, noting 'it would be funny to look at all the automation and stuff like have like some cameras like hey why not plug that on some AI LM and make it speak.'",
+      "source": "YouTube interview"
+    }
+  ],
+  "interests": [
+    {
+      "name": "Company Culture and Team Empowerment",
+      "description": "Nicolas is a firm believer of 'culture-first' companies and champions team empowerment. He stated 'I believe in culture' and prioritizes this over growth.",
+      "source": "Forbes interview and Founders Pledge profile"
+    },
+    {
+      "name": "Healthcare Technology",
+      "description": "He has a strong interest in healthcare, noting 'in the healthcare space I see like ways to have so much impact' and mentioned if he were to start a new project, healthcare would be a top choice for 'high potential impact on the world.'",
+      "source": "YouTube interview"
+    },
+    {
+      "name": "Dev Tools and Robotics",
+      "description": "Nicolas expresses strong interest in 'dev tools' and 'robotics' as technology trends he finds compelling. He enjoys 'learning about all these fields, new fields for me... from healthcare to crypto fintech robotics.'",
+      "source": "YouTube interview"
+    },
+    {
+      "name": "AI and Technology",
+      "description": "He has a personal preference for AI interaction, stating 'I prefer to speak to an AI than the human' when calling services because AI is 'never going to get mad at you,' is 'very patient,' and 'often actually useful.'",
+      "source": "YouTube interview"
+    },
+    {
+      "name": "Professional Development Books",
+      "description": "Nicolas reads business and professional development books, strongly recommending 'Radical Candor' by Kim Scott and 'Venture Deals' by Jason Mendelson and Brad Feld.",
+      "source": "Station F interview"
+    }
+  ],
+  "achievements": [
+    {
+      "achievement": "Co-founded Algolia",
+      "description": "Co-founded Algolia in 2012 with Julien Lemoine, growing it from a small startup to a multi-billion-dollar company (valued over $2 billion) with 350+ employees.",
+      "year": "2012-2020",
+      "impact": "Built a search API used by millions of developers worldwide"
+    },
+    {
+      "achievement": "PhD in Computer Science",
+      "description": "Holds a Ph.D. in Computer Science from the University of Nantes.",
+      "year": "2005",
+      "impact": "Academic achievement demonstrating deep technical expertise"
+    },
+    {
+      "achievement": "Y Combinator Partner",
+      "description": "Became a General Partner at Y Combinator after stepping down as Algolia CEO. Has conducted over 2,000-3,000 office hours across 9+ batches, advising hundreds of startups.",
+      "year": "2021-present",
+      "impact": "Giving back to the community by helping early-stage founders"
+    },
+    {
+      "achievement": "Successful CEO Transition",
+      "description": "Led Algolia as CEO to 350 people, then successfully hired a successor in 2020 to prioritize family time, stating 'I have three kids and I was not the most present father and husband' and wanting to 'spend more time with them.'",
+      "year": "2020",
+      "impact": "Demonstrated self-awareness and prioritization of family over career"
+    },
+    {
+      "achievement": "Financial Success through Secondary Sales",
+      "description": "Made strategic secondary sales: $1 million in Series B to purchase a home and $10 million in Series D, demonstrating financial planning and success.",
+      "year": "Various funding rounds",
+      "impact": "Achieved personal financial security"
+    }
+  ],
+  "philanthropic_efforts": [
+    {
+      "organization": "Founders Pledge",
+      "description": "Nicolas is a member of Founders Pledge, where he pledged to 'donate charity a percentage of any kind of secondary or like could any liquidity' from his company. He stated 'You actually donate a lot... I end up like donating a lot.'",
+      "commitment_type": "Percentage of liquidity events pledged to charity",
+      "quote": "A great way to take a broader perspective and make the right choice"
+    },
+    {
+      "focus": "Giving Back to Startup Community",
+      "description": "After leaving his CEO role, Nicolas stated his goal to 'dedicate the next couple of years to give back to the community, sharing my learnings' through his work at Y Combinator.",
+      "commitment_type": "Time and mentorship",
+      "impact": "Over 2,000-3,000 office hours with startups"
+    }
+  ],
+  "passions": [
+    {
+      "passion": "Family Time and Parenting",
+      "description": "Nicolas made the difficult decision to step down as CEO of Algolia to prioritize family, stating 'I have three kids and I was not the most present father and husband.' He now says 'I've never been able to spend as much quality time with my family as I have since I left Algoya.' He values 'encourage that curiosity' in children and transforming it into 'actual agency.'",
+      "priority_level": "Highest - chose family over CEO role",
+      "family_details": "Married with three children, lives in Oakland/El Cerrito, California"
+    },
+    {
+      "passion": "Helping Founders and Mentorship",
+      "description": "Describes his current YC partner role as a 'dream job' because he is in the 'front row seat of everything that's happening' while 'working with all of these founders.' He finds it 'so enjoyable to learn about all these fields, new fields for me.'",
+      "commitment": "Over 2,000-3,000 office hours with founders"
+    },
+    {
+      "passion": "Building Culture-First Companies",
+      "description": "Nicolas is passionate about company culture, stating 'I believe in culture' and his 'mission is to change' the view that culture is secondary. He champions core values of 'candor, grit, trust, care and humility.'",
+      "philosophy": "Culture over growth"
+    },
+    {
+      "passion": "High Agency and Intensity",
+      "description": "He values 'high agency people will win' and believes in 'getting going out of our comfort zone every single day.' He encourages curiosity and agency, particularly in children.",
+      "personal_value": "Growth through discomfort"
+    },
+    {
+      "passion": "Work-Life Balance and Health",
+      "description": "Nicolas believes strongly that 'your health is more important your family whatever' and demonstrates this through his decision to step back from CEO responsibilities for family time.",
+      "demonstrated_action": "Stepped down as CEO to prioritize family"
+    }
+  ]
+}

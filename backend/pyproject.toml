@@ -6,6 +6,8 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.109.0",
+    "firecrawl-py>=4.14.0",
+    "openai>=1.0.0",
     "uvicorn[standard]>=0.27.0",
     "motor>=3.3.0",
     "pydantic-settings>=2.0.0",
@@ -24,3 +26,13 @@ line-length = 88
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]

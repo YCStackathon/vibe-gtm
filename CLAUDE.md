@@ -1,6 +1,7 @@
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+We are building a YC hackathon project. Everything has to be simple and working, dont overengineer.
 
 ## Commands
 
@@ -64,3 +65,6 @@ Render Blueprint (`render.yaml`) deploys both services:
 - Backend: `api.gtm.useparadigm.app`
 
 CORS is configured for localhost:5173, Render URLs, and custom domain.
+
+## Python rules
+In python dont put file description at the top of the file.
