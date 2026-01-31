@@ -8,7 +8,8 @@ interface CyberCampaignSidebarProps {
 export function CyberCampaignSidebar({ onCreateClick }: CyberCampaignSidebarProps) {
   const {
     campaigns,
-    activeCampaign,
+    currentCampaign,
+    campaignInProgress,
     isLoadingList,
     isSaving,
     saveError,
@@ -90,24 +91,38 @@ export function CyberCampaignSidebar({ onCreateClick }: CyberCampaignSidebarProp
           </div>
         ) : (
           <ul className="p-2 space-y-1">
-            {campaigns.map((campaign: CampaignListItem) => (
-              <li key={campaign.id}>
-                <button
-                  onClick={() => selectCampaign(campaign.id)}
-                  className={`w-full text-left px-3 py-2 rounded font-mono text-sm transition-colors
-                    ${
-                      activeCampaign?.id === campaign.id
-                        ? 'bg-[var(--neon-cyan)]/10 border border-[var(--neon-cyan)]/50 text-[var(--neon-cyan)]'
-                        : 'border border-transparent hover:bg-[var(--panel-elevated)] hover:border-[var(--border-dim)] text-[var(--text-secondary)]'
-                    }`}
-                >
-                  <div className="truncate">{campaign.name}</div>
-                  <div className="text-xs text-[var(--text-muted)] mt-1">
-                    {formatDate(campaign.updated_at)}
-                  </div>
-                </button>
-              </li>
-            ))}
+            {campaigns.map((campaign: CampaignListItem) => {
+              const isActive = currentCampaign?.id === campaign.id
+              const isProcessing = campaignInProgress?.id === campaign.id
+
+              return (
+                <li key={campaign.id}>
+                  <button
+                    onClick={() => selectCampaign(campaign.id)}
+                    className={`w-full text-left px-3 py-2 rounded font-mono text-sm transition-colors
+                      ${
+                        isActive
+                          ? 'bg-[var(--neon-cyan)]/10 border border-[var(--neon-cyan)]/50 text-[var(--neon-cyan)]'
+                          : 'border border-transparent hover:bg-[var(--panel-elevated)] hover:border-[var(--border-dim)] text-[var(--text-secondary)]'
+                      }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="truncate flex-1">{campaign.name}</span>
+                      {isProcessing && (
+                        <span className="text-[var(--neon-magenta)] animate-pulse text-xs">●</span>
+                      )}
+                    </div>
+                    <div className="text-xs text-[var(--text-muted)] mt-1">
+                      {isProcessing ? (
+                        <span className="text-[var(--neon-magenta)]">EXTRACTING...</span>
+                      ) : (
+                        formatDate(campaign.updated_at)
+                      )}
+                    </div>
+                  </button>
+                </li>
+              )
+            })}
           </ul>
         )}
       </div>

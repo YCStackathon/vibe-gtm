@@ -12,16 +12,28 @@ import type { Campaign, CampaignListItem } from '../types/campaign'
 import type { FounderProfile } from '../types/profile'
 
 interface CampaignContextValue {
+  // List of all campaigns
   campaigns: CampaignListItem[]
-  activeCampaign: Campaign | null
+  // The campaign currently being viewed
+  currentCampaign: Campaign | null
+  // The campaign currently being processed (extraction in progress)
+  campaignInProgress: Campaign | null
+  // Loading states
   isLoadingList: boolean
   isLoadingCampaign: boolean
   isSaving: boolean
   saveError: string | null
+  // Computed: is the current campaign the one being processed?
+  isCurrentCampaignProcessing: boolean
+  // Actions
   selectCampaign: (id: string) => Promise<void>
   createCampaign: (name: string) => Promise<void>
   updateProfile: (profile: FounderProfile) => void
   refreshList: () => Promise<void>
+  // Start/stop processing
+  startProcessing: () => void
+  finishProcessing: (profile: FounderProfile) => Promise<void>
+  cancelProcessing: () => void
 }
 
 const CampaignContext = createContext<CampaignContextValue | null>(null)
@@ -30,7 +42,8 @@ const DEBOUNCE_MS = 500
 
 export function CampaignProvider({ children }: { children: ReactNode }) {
   const [campaigns, setCampaigns] = useState<CampaignListItem[]>([])
-  const [activeCampaign, setActiveCampaign] = useState<Campaign | null>(null)
+  const [currentCampaign, setCurrentCampaign] = useState<Campaign | null>(null)
+  const [campaignInProgress, setCampaignInProgress] = useState<Campaign | null>(null)
   const [isLoadingList, setIsLoadingList] = useState(true)
   const [isLoadingCampaign, setIsLoadingCampaign] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -38,12 +51,26 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingProfileRef = useRef<FounderProfile | null>(null)
-  const activeCampaignIdRef = useRef<string | null>(null)
+  const currentCampaignIdRef = useRef<string | null>(null)
+  // Use ref to track processing campaign to avoid stale closure issues
+  const campaignInProgressRef = useRef<Campaign | null>(null)
+  // Cache full campaign data to avoid network requests when switching
+  const campaignCacheRef = useRef<Map<string, Campaign>>(new Map())
 
-  // Keep ref in sync with active campaign
+  // Keep refs in sync
   useEffect(() => {
-    activeCampaignIdRef.current = activeCampaign?.id ?? null
-  }, [activeCampaign?.id])
+    currentCampaignIdRef.current = currentCampaign?.id ?? null
+  }, [currentCampaign?.id])
+
+  useEffect(() => {
+    campaignInProgressRef.current = campaignInProgress
+  }, [campaignInProgress])
+
+  // Computed: is current campaign being processed?
+  const isCurrentCampaignProcessing =
+    currentCampaign !== null &&
+    campaignInProgress !== null &&
+    currentCampaign.id === campaignInProgress.id
 
   // Flush pending save
   const flushSave = useCallback(async () => {
@@ -53,7 +80,7 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
     }
 
     const profile = pendingProfileRef.current
-    const campaignId = activeCampaignIdRef.current
+    const campaignId = currentCampaignIdRef.current
 
     if (!profile || !campaignId) return
 
@@ -82,7 +109,8 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
         if (list.length > 0) {
           setIsLoadingCampaign(true)
           const campaign = await campaignApi.getCampaign(list[0].id)
-          setActiveCampaign(campaign)
+          campaignCacheRef.current.set(campaign.id, campaign)
+          setCurrentCampaign(campaign)
           setIsLoadingCampaign(false)
         }
       } catch (err) {
@@ -106,15 +134,28 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
 
   const selectCampaign = useCallback(
     async (id: string) => {
-      // Flush any pending save before switching
-      await flushSave()
+      console.log('selectCampaign called:', id)
 
-      setIsLoadingCampaign(true)
+      // Don't wait for flush - do it in background
+      flushSave()
       setSaveError(null)
 
+      // Check cache first to avoid network request blocking during extraction
+      const cached = campaignCacheRef.current.get(id)
+      if (cached) {
+        console.log('Using cached campaign:', cached.name)
+        setCurrentCampaign(cached)
+        return
+      }
+
+      setIsLoadingCampaign(true)
+
       try {
+        console.log('Fetching campaign...')
         const campaign = await campaignApi.getCampaign(id)
-        setActiveCampaign(campaign)
+        console.log('Campaign fetched:', campaign.name)
+        campaignCacheRef.current.set(campaign.id, campaign)
+        setCurrentCampaign(campaign)
       } catch (err) {
         console.error('Failed to load campaign:', err)
       } finally {
@@ -133,17 +174,25 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
       setCampaigns((prev) => [newCampaign, ...prev])
 
       // Auto-select the new campaign
-      setActiveCampaign({
+      const fullCampaign: Campaign = {
         ...newCampaign,
         profile: null,
-      })
+      }
+      campaignCacheRef.current.set(fullCampaign.id, fullCampaign)
+      setCurrentCampaign(fullCampaign)
     },
     [flushSave]
   )
 
   const updateProfile = useCallback((profile: FounderProfile) => {
     // Optimistic update
-    setActiveCampaign((prev) => (prev ? { ...prev, profile } : null))
+    setCurrentCampaign((prev) => {
+      if (!prev) return null
+      const updated = { ...prev, profile }
+      // Update cache
+      campaignCacheRef.current.set(prev.id, updated)
+      return updated
+    })
 
     // Store pending profile
     pendingProfileRef.current = profile
@@ -156,7 +205,7 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
     // Schedule debounced save
     saveTimeoutRef.current = setTimeout(async () => {
       const profileToSave = pendingProfileRef.current
-      const campaignId = activeCampaignIdRef.current
+      const campaignId = currentCampaignIdRef.current
 
       if (!profileToSave || !campaignId) return
 
@@ -174,6 +223,60 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
     }, DEBOUNCE_MS)
   }, [])
 
+  // Start processing the current campaign
+  const startProcessing = useCallback(() => {
+    if (currentCampaign) {
+      setCampaignInProgress(currentCampaign)
+      campaignInProgressRef.current = currentCampaign
+    }
+  }, [currentCampaign])
+
+  // Finish processing with the extracted profile
+  const finishProcessing = useCallback(
+    async (profile: FounderProfile) => {
+      // Use ref to get the campaign that was being processed
+      const processingCampaign = campaignInProgressRef.current
+      if (!processingCampaign) {
+        console.error('No campaign in progress')
+        return
+      }
+
+      const targetId = processingCampaign.id
+      console.log('Finishing processing for campaign:', targetId)
+
+      // Save to the campaign that was being processed
+      try {
+        await campaignApi.updateCampaignProfile(targetId, profile)
+        console.log('Profile saved successfully')
+      } catch (err) {
+        console.error('Failed to save extracted profile:', err)
+      }
+
+      // Update cache for the target campaign
+      const existingCached = campaignCacheRef.current.get(targetId)
+      if (existingCached) {
+        campaignCacheRef.current.set(targetId, { ...existingCached, profile })
+      }
+
+      // Update current campaign if it's the same one
+      const currentId = currentCampaignIdRef.current
+      if (currentId === targetId) {
+        setCurrentCampaign((prev) => (prev ? { ...prev, profile } : null))
+      }
+
+      // Clear processing state
+      setCampaignInProgress(null)
+      campaignInProgressRef.current = null
+    },
+    []
+  )
+
+  // Cancel processing (on error)
+  const cancelProcessing = useCallback(() => {
+    setCampaignInProgress(null)
+    campaignInProgressRef.current = null
+  }, [])
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -187,15 +290,20 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
     <CampaignContext.Provider
       value={{
         campaigns,
-        activeCampaign,
+        currentCampaign,
+        campaignInProgress,
         isLoadingList,
         isLoadingCampaign,
         isSaving,
         saveError,
+        isCurrentCampaignProcessing,
         selectCampaign,
         createCampaign,
         updateProfile,
         refreshList,
+        startProcessing,
+        finishProcessing,
+        cancelProcessing,
       }}
     >
       {children}

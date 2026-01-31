@@ -28,6 +28,10 @@ class SocialUrls(BaseModel):
 
 class FounderProfile(BaseModel):
     name: str | None = None
+    first_name: str | None = None
+    middle_name: str | None = None
+    last_name: str | None = None
+    current_job_title: str | None = None
     email: str | None = None
     phone: str | None = None
     location: str | None = None
