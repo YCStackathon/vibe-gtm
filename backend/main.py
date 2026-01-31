@@ -14,6 +14,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from config import settings
+from routers import identity, proposal
+
+# MongoDB client (initialized on startup)
+db_client: AsyncIOMotorClient | None = None
+
+
+def get_database():
+    return db_client[settings.database_name]
 from database import get_database, set_client
 from routers import campaigns, identity
 
@@ -45,6 +53,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(identity.router)
+app.include_router(proposal.router)
 app.include_router(campaigns.router)
 
 

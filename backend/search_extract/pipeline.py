@@ -1,16 +1,22 @@
-from typing import Type
-from pydantic import BaseModel
+import asyncio
+from datetime import UTC, datetime
 
+from backend.config import settings
 from backend.crawling.schemas import PersonClaims
-from backend.search_extract.searcher import search
 from backend.search_extract.collector import collect_pages
 from backend.search_extract.extractor import extract_from_pages
+from backend.search_extract.hallucination_checker import (
+    run_from_db as check_hallucinations,
+)
 from backend.search_extract.schemas import ExtractedPage
+from backend.search_extract.searcher import search
+from motor.motor_asyncio import AsyncIOMotorClient
+from pydantic import BaseModel
 
 
 def run_pipeline(
     query: str,
-    schema: Type[BaseModel],
+    schema: type[BaseModel],
     prompt: str,
     limit: int = 10,
 ) -> list[ExtractedPage]:
@@ -40,6 +46,42 @@ def run_pipeline(
 
     return extracted
 
+
+async def save_to_db(query: str, extracted: list[ExtractedPage]) -> str:
+    """Save extracted pages to MongoDB."""
+    client = AsyncIOMotorClient(settings.mongodb_uri)
+    db = client[settings.database_name]
+
+    doc = {
+        "query": query,
+        "created_at": datetime.now(UTC),
+        "pages": [page.model_dump() for page in extracted],
+    }
+    result = await db.extractions.insert_one(doc)
+    client.close()
+    return str(result.inserted_id)
+
+
+def run_pipeline_and_save(
+    query: str,
+    schema: type[BaseModel],
+    prompt: str,
+    limit: int = 10,
+    verify: bool = True,
+) -> str:
+    """Run pipeline, save results, and optionally verify claims. Returns verified doc ID."""
+    extracted = run_pipeline(query, schema, prompt, limit)
+    doc_id = asyncio.run(save_to_db(query, extracted))
+    print(f"Saved to database with ID: {doc_id}")
+
+    if verify:
+        print("\nVerifying claims...")
+        verified_id = check_hallucinations(doc_id)
+        return verified_id
+
+    return doc_id
+
+
 if __name__ == "__main__":
     prompt= """
 Return ONLY JSON matching this schema:
@@ -59,4 +101,4 @@ Rules:
 - Output only the JSON object, nothing else.
     """
 
-    run_pipeline("Jakub Sobolewski AI Engineer",PersonClaims, prompt)
+    doc_id = run_pipeline_and_save("Jakub Sobolewski AI Engineer", PersonClaims, prompt, limit=1)

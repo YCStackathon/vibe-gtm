@@ -1,20 +1,21 @@
-from typing import Any, Optional
-from pydantic import BaseModel, HttpUrl
+from typing import Any
+
+from pydantic import BaseModel
 
 
 class SearchResult(BaseModel):
     url: str
-    title: Optional[str] = None
-    description: Optional[str] = None
+    title: str | None = None
+    description: str | None = None
 
 
 class CollectedPage(BaseModel):
     url: str
     markdown: str
-    title: Optional[str] = None
+    title: str | None = None
 
 
 class ExtractedPage(BaseModel):
     url: str
     data: Any
-    error: Optional[str] = None
+    error: str | None = None
