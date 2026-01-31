@@ -9,4 +9,5 @@ export interface CampaignListItem {
 
 export interface Campaign extends CampaignListItem {
   profile: FounderProfile | null
+  leads: string[]
 }

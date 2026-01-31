@@ -103,7 +103,7 @@ export function CyberCampaignSidebar({ onCreateClick }: CyberCampaignSidebarProp
                       ${
                         isActive
                           ? 'bg-[var(--neon-cyan)]/10 border border-[var(--neon-cyan)]/50 text-[var(--neon-cyan)]'
-                          : 'border border-transparent hover:bg-[var(--panel-elevated)] hover:border-[var(--border-dim)] text-[var(--text-secondary)]'
+                          : 'border border-transparent hover:bg-[var(--panel-elevated)] hover:border-[var(--border-dim)] text-[var(--text-primary)]'
                       }`}
                   >
                     <div className="flex items-center gap-2">
@@ -112,7 +112,7 @@ export function CyberCampaignSidebar({ onCreateClick }: CyberCampaignSidebarProp
                         <span className="text-[var(--neon-magenta)] animate-pulse text-xs">●</span>
                       )}
                     </div>
-                    <div className="text-xs text-[var(--text-muted)] mt-1">
+                    <div className="text-xs text-[var(--text-secondary)] mt-1">
                       {isProcessing ? (
                         <span className="text-[var(--neon-magenta)]">EXTRACTING...</span>
                       ) : (
@@ -129,7 +129,7 @@ export function CyberCampaignSidebar({ onCreateClick }: CyberCampaignSidebarProp
 
       {/* Footer */}
       <div className="p-3 border-t border-[var(--border-dim)]">
-        <p className="font-mono text-xs text-[var(--text-muted)] text-center">
+        <p className="font-mono text-xs text-[var(--text-secondary)] text-center">
           {campaigns.length} CAMPAIGN{campaigns.length !== 1 ? 'S' : ''}
         </p>
       </div>

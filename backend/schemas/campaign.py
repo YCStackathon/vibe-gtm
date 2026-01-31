@@ -18,7 +18,12 @@ class CampaignListItem(BaseModel):
 
 class CampaignFull(CampaignListItem):
     profile: FounderProfile | None = None
+    leads: list[str] = []
 
 
 class CampaignProfileUpdate(BaseModel):
     profile: FounderProfile
+
+
+class CampaignLeadsUpdate(BaseModel):
+    leads: list[str]

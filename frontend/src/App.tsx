@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import { extractProfile } from './api/identity'
+import { parseLeads } from './api/leads'
 import { CyberCampaignSidebar } from './components/CyberCampaignSidebar'
 import { CyberCreateCampaignModal } from './components/CyberCreateCampaignModal'
 import { CyberEmptyState } from './components/CyberEmptyState'
 import { CyberFileDropZone } from './components/CyberFileDropZone'
+import { CyberLeadsInput } from './components/CyberLeadsInput'
 import { CyberProfileCard } from './components/CyberProfileCard'
 import { CyberSocialUrlsInput } from './components/CyberSocialUrlsInput'
+import { CyberTabs } from './components/CyberTabs'
 import { CampaignProvider, useCampaign } from './context/CampaignContext'
 import type { SocialUrls } from './types/profile'
 
@@ -21,6 +24,7 @@ function AppContent() {
     isCurrentCampaignProcessing,
     createCampaign,
     updateProfile,
+    updateLeads,
     startProcessing,
     finishProcessing,
     cancelProcessing,
@@ -32,6 +36,8 @@ function AppContent() {
     '> VIBE_GTM v1.0.0 initialized',
     '> Awaiting identity payload...',
   ])
+  const [activeTab, setActiveTab] = useState<'founder_identity' | 'leads'>('founder_identity')
+  const [isParsing, setIsParsing] = useState(false)
 
   const addLog = (message: string) => {
     setTerminalLogs((prev) => [...prev, `> ${message}`])
@@ -98,6 +104,27 @@ function AppContent() {
     })
   }
 
+  const handleParseLeads = async (rawText: string): Promise<boolean> => {
+    if (!currentCampaign) return false
+
+    setIsParsing(true)
+    addLog('Parsing leads input...')
+    try {
+      const response = await parseLeads(rawText)
+      const existingLeads = currentCampaign.leads || []
+      const newLeads = [...existingLeads, ...response.queries]
+      updateLeads(newLeads)
+      addLog(`Parsed ${response.queries.length} lead queries`)
+      return true
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to parse leads'
+      addLog(`ERROR: ${msg}`)
+      return false
+    } finally {
+      setIsParsing(false)
+    }
+  }
+
   const profile = currentCampaign?.profile
   const socialUrls: SocialUrls = {
     linkedin: profile?.social_urls?.linkedin || '',
@@ -115,7 +142,7 @@ function AppContent() {
   const canEditCurrentCampaign = !campaignInProgress || isCurrentCampaignProcessing
 
   return (
-    <div className="scanlines crt-flicker flex h-screen bg-[var(--void)]">
+    <div className="flex h-screen bg-[var(--void)]">
       {/* Grid Background Pattern */}
       <div
         className="fixed inset-0 opacity-5 pointer-events-none"
@@ -189,7 +216,7 @@ function AppContent() {
                   <div className="w-3 h-3 rounded-full bg-red-500/80" />
                   <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
                   <div className="w-3 h-3 rounded-full bg-green-500/80" />
-                  <span className="ml-2 text-[var(--text-muted)]">system_log.sh</span>
+                  <span className="ml-2 text-[var(--text-secondary)]">System Log</span>
                 </div>
                 <div className="space-y-1 max-h-24 overflow-y-auto">
                   {terminalLogs.map((log, i) => (
@@ -200,9 +227,10 @@ function AppContent() {
                           ? 'text-red-400'
                           : log.includes('complete') ||
                               log.includes('identified') ||
-                              log.includes('success')
+                              log.includes('success') ||
+                              log.includes('Parsed')
                             ? 'neon-green'
-                            : 'text-[var(--text-secondary)]'
+                            : 'text-[var(--text-primary)]'
                       }`}
                     >
                       {log}
@@ -212,58 +240,76 @@ function AppContent() {
                 </div>
               </div>
 
-              {/* Main Content Grid */}
-              <div className="grid lg:grid-cols-[1fr,400px] gap-8">
-                {/* Left Column - Upload or Profile */}
-                <div>
-                  {!profile || !profile.name ? (
-                    canEditCurrentCampaign ? (
-                      <CyberFileDropZone
-                        onFileSelect={handleFileSelect}
-                        isLoading={isCurrentCampaignProcessing}
-                      />
-                    ) : (
-                      <div className="cyber-panel rounded-lg p-8 text-center">
-                        <p className="font-mono text-sm text-[var(--text-muted)]">
-                          PROCESSING_LOCKED
-                        </p>
-                        <p className="font-mono text-xs text-[var(--text-muted)] mt-2">
-                          Another campaign is being processed.
-                          <br />
-                          Wait for extraction to complete.
-                        </p>
-                        {campaignInProgress && (
-                          <p className="font-mono text-xs text-[var(--neon-amber)] mt-4">
-                            Processing: {campaignInProgress.name}
-                          </p>
-                        )}
-                      </div>
-                    )
-                  ) : (
-                    <CyberProfileCard
-                      profile={profile}
-                      onReset={canEditCurrentCampaign ? handleReset : undefined}
-                    />
-                  )}
+              {/* Tabs */}
+              <CyberTabs
+                tabs={[
+                  { id: 'founder_identity', label: 'Founder Identity' },
+                  { id: 'leads', label: 'Leads' },
+                ]}
+                activeTab={activeTab}
+                onTabChange={(tab) => setActiveTab(tab as 'founder_identity' | 'leads')}
+              />
 
-                  {error && (
-                    <div className="mt-4 p-4 border border-red-500/50 bg-red-500/10 rounded font-mono text-sm">
-                      <span className="text-red-400">SYSTEM_ERROR:</span>
-                      <span className="text-[var(--text-secondary)] ml-2">{error}</span>
+              {/* Tab Content */}
+              {activeTab === 'founder_identity' ? (
+                <div className="grid lg:grid-cols-[1fr,400px] gap-8">
+                  {/* Left Column - Upload or Profile */}
+                  <div>
+                    {!profile || !profile.name ? (
+                      canEditCurrentCampaign ? (
+                        <CyberFileDropZone
+                          onFileSelect={handleFileSelect}
+                          isLoading={isCurrentCampaignProcessing}
+                        />
+                      ) : (
+                        <div className="cyber-panel rounded-lg p-8 text-center">
+                          <p className="font-mono text-sm text-[var(--text-muted)]">
+                            PROCESSING_LOCKED
+                          </p>
+                          <p className="font-mono text-xs text-[var(--text-muted)] mt-2">
+                            Another campaign is being processed.
+                            <br />
+                            Wait for extraction to complete.
+                          </p>
+                          {campaignInProgress && (
+                            <p className="font-mono text-xs text-[var(--neon-amber)] mt-4">
+                              Processing: {campaignInProgress.name}
+                            </p>
+                          )}
+                        </div>
+                      )
+                    ) : (
+                      <CyberProfileCard
+                        profile={profile}
+                        onReset={canEditCurrentCampaign ? handleReset : undefined}
+                      />
+                    )}
+
+                    {error && (
+                      <div className="mt-4 p-4 border border-red-500/50 bg-red-500/10 rounded font-mono text-sm">
+                        <span className="text-red-400">SYSTEM_ERROR:</span>
+                        <span className="text-[var(--text-secondary)] ml-2">{error}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right Column - Social Inputs */}
+                  {canEditCurrentCampaign && (
+                    <div className="lg:sticky lg:top-24 h-fit">
+                      <CyberSocialUrlsInput
+                        urls={socialUrls}
+                        onChange={handleSocialUrlsChange}
+                      />
                     </div>
                   )}
                 </div>
-
-                {/* Right Column - Social Inputs */}
-                {profile && profile.name && canEditCurrentCampaign && (
-                  <div className="lg:sticky lg:top-24 h-fit">
-                    <CyberSocialUrlsInput
-                      urls={socialUrls}
-                      onChange={handleSocialUrlsChange}
-                    />
-                  </div>
-                )}
-              </div>
+              ) : (
+                <CyberLeadsInput
+                  queries={currentCampaign.leads || []}
+                  onParse={handleParseLeads}
+                  isParsing={isParsing}
+                />
+              )}
             </main>
 
             {/* Footer */}

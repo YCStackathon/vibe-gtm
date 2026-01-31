@@ -55,3 +55,16 @@ export async function updateCampaignProfile(
     throw new Error(error.detail || 'Failed to update campaign profile')
   }
 }
+
+export async function updateCampaignLeads(id: string, leads: string[]): Promise<void> {
+  const response = await fetch(`${API_URL}/api/campaigns/${id}/leads`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ leads }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Unknown error' }))
+    throw new Error(error.detail || 'Failed to update campaign leads')
+  }
+}
