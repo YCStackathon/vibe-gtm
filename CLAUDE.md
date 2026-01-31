@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Backend (from `backend/` directory)
 ```bash
 uv sync                              # Install dependencies
-uv run uvicorn main:app --reload     # Run dev server (localhost:8000)
+uv run uvicorn main:app --reload --port 8001  # Run dev server (localhost:8001)
 uv run pytest                        # Run tests
 uv run ruff check .                  # Lint
 uv run ruff check . --fix            # Lint and fix
@@ -17,7 +17,7 @@ uv run ruff format .                 # Format
 ### Frontend (from `frontend/` directory)
 ```bash
 npm install          # Install dependencies
-npm run dev          # Run dev server (localhost:5173)
+npm run dev          # Run dev server (localhost:5180)
 npm run build        # Build for production
 npm run lint         # Lint
 ```
@@ -29,7 +29,7 @@ npm run lint         # Lint
 - `frontend/` - React 19 + TypeScript + Vite
 
 **API Communication:**
-- Development: Vite proxy forwards `/api/*` → `localhost:8000`
+- Development: Vite proxy forwards `/api/*` → `localhost:8001`
 - Production: Frontend uses `VITE_API_URL` env var for API base URL
 
 **Database:**
