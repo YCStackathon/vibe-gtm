@@ -1,6 +1,7 @@
 from crawling.schemas import Claim
 from openai import OpenAI
 
+from config import settings
 from .schemas import ProposalResult
 
 
@@ -17,7 +18,7 @@ def find_matches(
     target_person_name: str,
     target_claims: list[Claim],
 ) -> ProposalResult:
-    client = OpenAI()
+    client = OpenAI(api_key=settings.openai_api_key)
 
     prompt = """You are an expert at finding meaningful connections between people.
 
@@ -38,7 +39,7 @@ TARGET ({target_person_name}) CLAIMS:
 {format_claims(target_claims)}"""
 
     response = client.beta.chat.completions.parse(
-        model="gpt-4o-mini",
+        model="gpt-5-nano",
         messages=[
             {"role": "system", "content": prompt},
             {"role": "user", "content": user_content},
