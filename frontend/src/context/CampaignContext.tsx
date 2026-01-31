@@ -18,10 +18,12 @@ interface CampaignContextValue {
   isLoadingCampaign: boolean
   isSaving: boolean
   saveError: string | null
+  extractingCampaignId: string | null
   selectCampaign: (id: string) => Promise<void>
   createCampaign: (name: string) => Promise<void>
   updateProfile: (profile: FounderProfile) => void
   refreshList: () => Promise<void>
+  setExtractingCampaignId: (id: string | null) => void
 }
 
 const CampaignContext = createContext<CampaignContextValue | null>(null)
@@ -35,6 +37,7 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
   const [isLoadingCampaign, setIsLoadingCampaign] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [extractingCampaignId, setExtractingCampaignId] = useState<string | null>(null)
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingProfileRef = useRef<FounderProfile | null>(null)
@@ -192,10 +195,12 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
         isLoadingCampaign,
         isSaving,
         saveError,
+        extractingCampaignId,
         selectCampaign,
         createCampaign,
         updateProfile,
         refreshList,
+        setExtractingCampaignId,
       }}
     >
       {children}

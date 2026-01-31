@@ -18,11 +18,12 @@ function AppContent() {
     isLoadingCampaign,
     isSaving,
     saveError,
+    extractingCampaignId,
     createCampaign,
     updateProfile,
+    setExtractingCampaignId,
   } = useCampaign()
 
-  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [terminalLogs, setTerminalLogs] = useState<string[]>([
@@ -38,7 +39,7 @@ function AppContent() {
     const targetCampaignId = activeCampaign?.id
     if (!targetCampaignId) return
 
-    setIsLoading(true)
+    setExtractingCampaignId(targetCampaignId)
     setError(null)
     addLog(`Processing: ${file.name}`)
     addLog('Connecting to Reducto pipeline...')
@@ -61,7 +62,7 @@ function AppContent() {
       setError(msg)
       addLog(`ERROR: ${msg}`)
     } finally {
-      setIsLoading(false)
+      setExtractingCampaignId(null)
     }
   }
 
@@ -71,6 +72,10 @@ function AppContent() {
     // Clear profile for current campaign
     const emptyProfile = {
       name: null,
+      first_name: null,
+      middle_name: null,
+      last_name: null,
+      current_job_title: null,
       email: null,
       phone: null,
       location: null,
@@ -209,7 +214,7 @@ function AppContent() {
                   {!profile || !profile.name ? (
                     <CyberFileDropZone
                       onFileSelect={handleFileSelect}
-                      isLoading={isLoading}
+                      isLoading={extractingCampaignId === activeCampaign?.id}
                     />
                   ) : (
                     <CyberProfileCard profile={profile} onReset={handleReset} />

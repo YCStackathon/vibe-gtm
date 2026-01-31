@@ -28,9 +28,16 @@ export function CyberProfileCard({ profile, onReset }: CyberProfileCardProps) {
         {/* Name & Summary */}
         <div className="mb-6">
           <div className="flex items-start justify-between mb-2">
-            <h2 className="text-2xl font-bold neon-cyan">
-              {profile.name || 'UNKNOWN_ENTITY'}
-            </h2>
+            <div>
+              <h2 className="text-2xl font-bold neon-cyan">
+                {profile.name || 'UNKNOWN_ENTITY'}
+              </h2>
+              {profile.current_job_title && (
+                <p className="text-sm text-[var(--neon-magenta)] font-mono mt-1">
+                  {profile.current_job_title}
+                </p>
+              )}
+            </div>
             <span className="text-xs font-mono text-[var(--text-muted)] bg-[var(--panel-elevated)] px-2 py-1 rounded">
               ID:{Math.random().toString(36).substring(2, 8).toUpperCase()}
             </span>

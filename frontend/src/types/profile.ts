@@ -25,6 +25,10 @@ export interface SocialUrls {
 
 export interface FounderProfile {
   name: string | null
+  first_name: string | null
+  middle_name: string | null
+  last_name: string | null
+  current_job_title: string | null
   email: string | null
   phone: string | null
   location: string | null

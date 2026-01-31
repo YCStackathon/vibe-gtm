@@ -12,6 +12,7 @@ export function CyberCampaignSidebar({ onCreateClick }: CyberCampaignSidebarProp
     isLoadingList,
     isSaving,
     saveError,
+    extractingCampaignId,
     selectCampaign,
   } = useCampaign()
 
@@ -101,9 +102,18 @@ export function CyberCampaignSidebar({ onCreateClick }: CyberCampaignSidebarProp
                         : 'border border-transparent hover:bg-[var(--panel-elevated)] hover:border-[var(--border-dim)] text-[var(--text-secondary)]'
                     }`}
                 >
-                  <div className="truncate">{campaign.name}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="truncate flex-1">{campaign.name}</span>
+                    {extractingCampaignId === campaign.id && (
+                      <span className="text-[var(--neon-amber)] animate-pulse text-xs">●</span>
+                    )}
+                  </div>
                   <div className="text-xs text-[var(--text-muted)] mt-1">
-                    {formatDate(campaign.updated_at)}
+                    {extractingCampaignId === campaign.id ? (
+                      <span className="text-[var(--neon-amber)]">EXTRACTING...</span>
+                    ) : (
+                      formatDate(campaign.updated_at)
+                    )}
                   </div>
                 </button>
               </li>
