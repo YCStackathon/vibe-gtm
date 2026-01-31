@@ -34,6 +34,8 @@ If a PRD exists in `docs/`:
 
 ### 3. Ask Clarifying Questions
 
+**Use AskUserQuestion tool to ask clarifying questions about the product.**
+
 **IMPORTANT**: Only ask questions about genuinely unclear aspects. Do NOT ask about:
 
 - Information already in the PRD or command
