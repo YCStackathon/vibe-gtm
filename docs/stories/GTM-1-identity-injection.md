@@ -92,6 +92,15 @@ The extraction uses a comprehensive schema covering:
 - **GTM-1.2**: Store profile in MongoDB for persistence
 - **GTM-1.3**: Edit/refine extracted profile manually
 
+## Tradeoffs Made
+
+| Decision | Tradeoff | Rationale |
+|----------|----------|-----------|
+| Static social URL list (LinkedIn, Twitter, GitHub, Instagram, Facebook, Website) | Can't add custom platforms | Covers 95% of use cases; simpler UX than dynamic inputs |
+| Pre-fill URLs from CV extraction | May miss URLs not in CV | Better UX when URLs exist; manual entry still available |
+| Client-side URL validation only | Invalid URLs could be stored | Faster feedback; Firecrawl will validate when enriching |
+| Session storage (not persisted) | Profile lost on refresh | MVP simplicity; GTM-1.2 adds MongoDB persistence |
+
 ## Non-functional Requirements
 
 ### Loading & Feedback
