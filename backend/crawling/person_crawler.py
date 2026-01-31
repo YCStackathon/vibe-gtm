@@ -1,7 +1,9 @@
 import json
-from firecrawl import FirecrawlApp
-from schemas import PersonClaims
+
 from dotenv import load_dotenv
+from firecrawl import FirecrawlApp
+
+from schemas import PersonClaims
 
 load_dotenv()
 

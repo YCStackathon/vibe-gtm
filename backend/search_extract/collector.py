@@ -1,7 +1,6 @@
-from firecrawl import Firecrawl
+from backend.search_extract.schemas import CollectedPage, SearchResult
 from dotenv import load_dotenv
-
-from backend.search_extract.schemas import SearchResult, CollectedPage
+from firecrawl import Firecrawl
 
 load_dotenv()
 

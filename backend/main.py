@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 
 from config import settings
-from routers import identity
+from routers import identity, proposal
 
 # MongoDB client (initialized on startup)
 db_client: AsyncIOMotorClient | None = None
@@ -52,6 +52,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(identity.router)
+app.include_router(proposal.router)
 
 
 @app.get("/api/health")

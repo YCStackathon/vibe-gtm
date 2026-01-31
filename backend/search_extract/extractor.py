@@ -1,9 +1,8 @@
-from typing import Type
-from openai import OpenAI
-from pydantic import BaseModel
-from dotenv import load_dotenv
 
 from backend.search_extract.schemas import CollectedPage, ExtractedPage
+from dotenv import load_dotenv
+from openai import OpenAI
+from pydantic import BaseModel
 
 load_dotenv()
 
@@ -12,7 +11,7 @@ MAX_CONTENT_LENGTH = 15000
 
 def extract_from_pages(
     pages: list[CollectedPage],
-    schema: Type[BaseModel],
+    schema: type[BaseModel],
     prompt: str,
 ) -> list[ExtractedPage]:
     """Run LLM extraction on each page using the provided schema."""

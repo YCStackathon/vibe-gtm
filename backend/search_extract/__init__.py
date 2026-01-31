@@ -1,8 +1,8 @@
-from .schemas import SearchResult, CollectedPage, ExtractedPage
-from .searcher import search
 from .collector import collect_pages
 from .extractor import extract_from_pages
 from .pipeline import run_pipeline
+from .schemas import CollectedPage, ExtractedPage, SearchResult
+from .searcher import search
 
 __all__ = [
     "SearchResult",

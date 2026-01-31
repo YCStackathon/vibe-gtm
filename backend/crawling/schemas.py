@@ -1,4 +1,5 @@
-from typing import List, Literal, Optional
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -29,7 +30,7 @@ class Claim(BaseModel):
         description="Direct URL to the source supporting this claim"
     )
 
-    notes: Optional[str] = Field(
+    notes: str | None = Field(
         None,
         description="Optional extra context for internal use (not user-facing)"
     )
@@ -43,10 +44,10 @@ class ClaimVerified(Claim, VerificationAnalysis):
 
 class PersonClaims(BaseModel):
     person_name: str
-    claims: List[Claim] = Field(
+    claims: list[Claim] = Field(
         default_factory=list,
         description="List of extracted connection-relevant claims"
     )
 
 class PersonClaimsVerified(PersonClaims):
-    claims: List[ClaimVerified]
+    claims: list[ClaimVerified]
