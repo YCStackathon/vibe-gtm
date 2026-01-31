@@ -142,7 +142,7 @@ function AppContent() {
   const canEditCurrentCampaign = !campaignInProgress || isCurrentCampaignProcessing
 
   return (
-    <div className="scanlines crt-flicker flex h-screen bg-[var(--void)]">
+    <div className="flex h-screen bg-[var(--void)]">
       {/* Grid Background Pattern */}
       <div
         className="fixed inset-0 opacity-5 pointer-events-none"
