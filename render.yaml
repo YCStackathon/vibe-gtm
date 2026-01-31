@@ -11,6 +11,8 @@ services:
         value: "3.11.11"
       - key: MONGODB_URI
         sync: false  # You'll set this in Render dashboard
+      - key: REDUCTO_API_KEY
+        sync: false  # Set in Render dashboard
 
   # React Frontend (Static Site)
   - type: web
