@@ -11,7 +11,6 @@ services:
         value: "3.11"
       - key: MONGODB_URI
         sync: false  # You'll set this in Render dashboard
-    plan: free
 
   # React Frontend (Static Site)
   - type: web
@@ -27,4 +26,3 @@ services:
     envVars:
       - key: VITE_API_URL
         value: https://vibe-gtm-api.onrender.com
-    plan: free
