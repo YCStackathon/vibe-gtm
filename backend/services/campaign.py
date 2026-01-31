@@ -68,6 +68,7 @@ async def get_campaign(
         created_at=doc["created_at"],
         updated_at=doc["updated_at"],
         profile=profile,
+        leads=doc.get("leads", []),
     )
 
 
@@ -80,6 +81,24 @@ async def update_campaign_profile(
             {
                 "$set": {
                     "profile": profile.model_dump(),
+                    "updated_at": datetime.now(UTC),
+                }
+            },
+        )
+        return result.matched_count > 0
+    except Exception:
+        return False
+
+
+async def update_campaign_leads(
+    db: AsyncIOMotorDatabase, campaign_id: str, leads: list[str]
+) -> bool:
+    try:
+        result = await db[COLLECTION].update_one(
+            {"_id": ObjectId(campaign_id)},
+            {
+                "$set": {
+                    "leads": leads,
                     "updated_at": datetime.now(UTC),
                 }
             },

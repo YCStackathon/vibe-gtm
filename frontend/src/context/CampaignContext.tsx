@@ -29,6 +29,7 @@ interface CampaignContextValue {
   selectCampaign: (id: string) => Promise<void>
   createCampaign: (name: string) => Promise<void>
   updateProfile: (profile: FounderProfile) => void
+  updateLeads: (leads: string[]) => void
   refreshList: () => Promise<void>
   // Start/stop processing
   startProcessing: () => void
@@ -177,6 +178,7 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
       const fullCampaign: Campaign = {
         ...newCampaign,
         profile: null,
+        leads: [],
       }
       campaignCacheRef.current.set(fullCampaign.id, fullCampaign)
       setCurrentCampaign(fullCampaign)
@@ -221,6 +223,31 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
         setIsSaving(false)
       }
     }, DEBOUNCE_MS)
+  }, [])
+
+  const updateLeads = useCallback(async (leads: string[]) => {
+    const campaignId = currentCampaignIdRef.current
+    if (!campaignId) return
+
+    // Optimistic update
+    setCurrentCampaign((prev) => {
+      if (!prev) return null
+      const updated = { ...prev, leads }
+      campaignCacheRef.current.set(prev.id, updated)
+      return updated
+    })
+
+    // Save immediately
+    setIsSaving(true)
+    setSaveError(null)
+
+    try {
+      await campaignApi.updateCampaignLeads(campaignId, leads)
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Failed to save leads')
+    } finally {
+      setIsSaving(false)
+    }
   }, [])
 
   // Start processing the current campaign
@@ -300,6 +327,7 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
         selectCampaign,
         createCampaign,
         updateProfile,
+        updateLeads,
         refreshList,
         startProcessing,
         finishProcessing,

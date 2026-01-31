@@ -4,6 +4,7 @@ from database import get_database
 from schemas.campaign import (
     CampaignCreate,
     CampaignFull,
+    CampaignLeadsUpdate,
     CampaignListItem,
     CampaignProfileUpdate,
 )
@@ -11,6 +12,7 @@ from services.campaign import (
     create_campaign,
     get_campaign,
     list_campaigns,
+    update_campaign_leads,
     update_campaign_profile,
 )
 
@@ -44,5 +46,15 @@ async def update_campaign_profile_endpoint(
 ):
     db = get_database()
     success = await update_campaign_profile(db, campaign_id, data.profile)
+    if not success:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+
+@router.patch("/{campaign_id}/leads", status_code=204)
+async def update_campaign_leads_endpoint(
+    campaign_id: str, data: CampaignLeadsUpdate
+):
+    db = get_database()
+    success = await update_campaign_leads(db, campaign_id, data.leads)
     if not success:
         raise HTTPException(status_code=404, detail="Campaign not found")
