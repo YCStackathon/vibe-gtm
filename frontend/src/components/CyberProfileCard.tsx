@@ -2,7 +2,7 @@ import type { FounderProfile } from '../types/profile'
 
 interface CyberProfileCardProps {
   profile: FounderProfile
-  onReset: () => void
+  onReset?: () => void
 }
 
 export function CyberProfileCard({ profile, onReset }: CyberProfileCardProps) {
@@ -14,14 +14,16 @@ export function CyberProfileCard({ profile, onReset }: CyberProfileCardProps) {
           <div className="w-2 h-2 rounded-full bg-[var(--neon-green)]" />
           <span className="font-mono text-xs text-[var(--text-muted)]">IDENTITY_VERIFIED</span>
         </div>
-        <button
-          onClick={onReset}
-          className="px-3 py-1 text-xs font-mono border border-[var(--border-dim)] rounded
-                     hover:border-[var(--neon-magenta)] hover:text-[var(--neon-magenta)]
-                     transition-colors glitch-hover"
-        >
-          [RESET]
-        </button>
+        {onReset && (
+          <button
+            onClick={onReset}
+            className="px-3 py-1 text-xs font-mono border border-[var(--border-dim)] rounded
+                       hover:border-[var(--neon-magenta)] hover:text-[var(--neon-magenta)]
+                       transition-colors glitch-hover"
+          >
+            [RESET]
+          </button>
+        )}
       </div>
 
       <div className="p-6">

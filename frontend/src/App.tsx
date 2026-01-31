@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { extractProfile } from './api/identity'
-import * as campaignApi from './api/campaigns'
 import { CyberCampaignSidebar } from './components/CyberCampaignSidebar'
 import { CyberCreateCampaignModal } from './components/CyberCreateCampaignModal'
 import { CyberEmptyState } from './components/CyberEmptyState'
@@ -13,15 +12,18 @@ import type { SocialUrls } from './types/profile'
 function AppContent() {
   const {
     campaigns,
-    activeCampaign,
+    currentCampaign,
+    campaignInProgress,
     isLoadingList,
     isLoadingCampaign,
     isSaving,
     saveError,
-    extractingCampaignId,
+    isCurrentCampaignProcessing,
     createCampaign,
     updateProfile,
-    setExtractingCampaignId,
+    startProcessing,
+    finishProcessing,
+    cancelProcessing,
   } = useCampaign()
 
   const [error, setError] = useState<string | null>(null)
@@ -36,38 +38,28 @@ function AppContent() {
   }
 
   const handleFileSelect = async (file: File) => {
-    const targetCampaignId = activeCampaign?.id
-    if (!targetCampaignId) return
+    if (!currentCampaign) return
 
-    setExtractingCampaignId(targetCampaignId)
+    startProcessing()
     setError(null)
     addLog(`Processing: ${file.name}`)
-    addLog('Connecting to Reducto pipeline...')
+    addLog('Connecting to Reducto extract API...')
 
     try {
       const response = await extractProfile(file)
-
-      // Save to the campaign we started with
-      await campaignApi.updateCampaignProfile(targetCampaignId, response.profile)
-
-      // Only update local state if still viewing that campaign
-      if (activeCampaign?.id === targetCampaignId) {
-        updateProfile(response.profile)
-      }
-
+      finishProcessing(response.profile)
       addLog('Identity extraction complete')
       addLog(`Subject identified: ${response.profile.name || 'UNKNOWN'}`)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Extraction failed'
       setError(msg)
       addLog(`ERROR: ${msg}`)
-    } finally {
-      setExtractingCampaignId(null)
+      cancelProcessing()
     }
   }
 
   const handleReset = () => {
-    if (!activeCampaign) return
+    if (!currentCampaign) return
 
     // Clear profile for current campaign
     const emptyProfile = {
@@ -98,15 +90,15 @@ function AppContent() {
   }
 
   const handleSocialUrlsChange = (urls: SocialUrls) => {
-    if (!activeCampaign?.profile) return
+    if (!currentCampaign?.profile) return
 
     updateProfile({
-      ...activeCampaign.profile,
+      ...currentCampaign.profile,
       social_urls: urls,
     })
   }
 
-  const profile = activeCampaign?.profile
+  const profile = currentCampaign?.profile
   const socialUrls: SocialUrls = {
     linkedin: profile?.social_urls?.linkedin || '',
     twitter: profile?.social_urls?.twitter || '',
@@ -118,6 +110,9 @@ function AppContent() {
 
   // Show empty state if no campaigns
   const showEmptyState = !isLoadingList && campaigns.length === 0
+
+  // Can only edit/process the current campaign if no other campaign is being processed
+  const canEditCurrentCampaign = !campaignInProgress || isCurrentCampaignProcessing
 
   return (
     <div className="scanlines crt-flicker flex h-screen bg-[var(--void)]">
@@ -142,13 +137,13 @@ function AppContent() {
       <div className="relative z-10 flex-1 overflow-y-auto">
         {showEmptyState ? (
           <CyberEmptyState onCreateClick={() => setShowCreateModal(true)} />
-        ) : isLoadingList || isLoadingCampaign ? (
+        ) : isLoadingList || (isLoadingCampaign && !currentCampaign) ? (
           <div className="flex-1 flex items-center justify-center h-full">
             <span className="font-mono text-sm text-[var(--text-muted)] animate-pulse">
               LOADING...
             </span>
           </div>
-        ) : activeCampaign ? (
+        ) : currentCampaign ? (
           <div className="min-h-screen">
             {/* Campaign Header */}
             <header className="border-b border-[var(--border-dim)] bg-[var(--panel-bg)]/80 backdrop-blur-sm sticky top-0 z-10">
@@ -156,20 +151,30 @@ function AppContent() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h1 className="font-mono text-lg neon-cyan">
-                      {activeCampaign.name}
+                      {currentCampaign.name}
                     </h1>
                     <p className="font-mono text-xs text-[var(--text-muted)]">
-                      CAMPAIGN_ID: {activeCampaign.id.slice(-8).toUpperCase()}
+                      CAMPAIGN_ID: {currentCampaign.id.slice(-8).toUpperCase()}
                     </p>
                   </div>
-                  <div className="font-mono text-xs">
+                  <div className="font-mono text-xs flex items-center gap-3">
+                    {isLoadingCampaign && (
+                      <span className="text-[var(--text-muted)] animate-pulse">
+                        LOADING...
+                      </span>
+                    )}
+                    {isCurrentCampaignProcessing && (
+                      <span className="text-[var(--neon-magenta)] animate-pulse">
+                        EXTRACTING...
+                      </span>
+                    )}
                     {isSaving && (
                       <span className="text-[var(--neon-amber)] animate-pulse">
                         SAVING...
                       </span>
                     )}
                     {saveError && <span className="text-red-400">SAVE_ERROR</span>}
-                    {!isSaving && !saveError && profile && (
+                    {!isSaving && !saveError && !isCurrentCampaignProcessing && profile && (
                       <span className="neon-green">SYNCED</span>
                     )}
                   </div>
@@ -212,12 +217,33 @@ function AppContent() {
                 {/* Left Column - Upload or Profile */}
                 <div>
                   {!profile || !profile.name ? (
-                    <CyberFileDropZone
-                      onFileSelect={handleFileSelect}
-                      isLoading={extractingCampaignId === activeCampaign?.id}
-                    />
+                    canEditCurrentCampaign ? (
+                      <CyberFileDropZone
+                        onFileSelect={handleFileSelect}
+                        isLoading={isCurrentCampaignProcessing}
+                      />
+                    ) : (
+                      <div className="cyber-panel rounded-lg p-8 text-center">
+                        <p className="font-mono text-sm text-[var(--text-muted)]">
+                          PROCESSING_LOCKED
+                        </p>
+                        <p className="font-mono text-xs text-[var(--text-muted)] mt-2">
+                          Another campaign is being processed.
+                          <br />
+                          Wait for extraction to complete.
+                        </p>
+                        {campaignInProgress && (
+                          <p className="font-mono text-xs text-[var(--neon-amber)] mt-4">
+                            Processing: {campaignInProgress.name}
+                          </p>
+                        )}
+                      </div>
+                    )
                   ) : (
-                    <CyberProfileCard profile={profile} onReset={handleReset} />
+                    <CyberProfileCard
+                      profile={profile}
+                      onReset={canEditCurrentCampaign ? handleReset : undefined}
+                    />
                   )}
 
                   {error && (
@@ -229,7 +255,7 @@ function AppContent() {
                 </div>
 
                 {/* Right Column - Social Inputs */}
-                {profile && profile.name && (
+                {profile && profile.name && canEditCurrentCampaign && (
                   <div className="lg:sticky lg:top-24 h-fit">
                     <CyberSocialUrlsInput
                       urls={socialUrls}
