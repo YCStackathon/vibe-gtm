@@ -136,7 +136,19 @@ async def extract_profile_from_pdf(file_content: bytes) -> FounderProfile:
                 )
             )
 
+        # Parse skills - extract string values from structured objects
+        skills = []
+        for skill in extract_data.get("skills", []):
+            skill_name = get_value(skill, "skillName")
+            if skill_name:
+                skills.append(skill_name)
+            elif isinstance(skill, str):
+                skills.append(skill)
+
         logger.info(f"Extracted profile for: {name}")
+        logger.info(f"  - {len(experience)} experiences")
+        logger.info(f"  - {len(education)} education entries")
+        logger.info(f"  - {len(skills)} skills")
 
         return FounderProfile(
             name=name,
@@ -144,7 +156,7 @@ async def extract_profile_from_pdf(file_content: bytes) -> FounderProfile:
             phone=phone,
             location="San Francisco, California",  # Could parse from experience
             summary=get_value(extract_data, "summary"),
-            skills=extract_data.get("skills", []),
+            skills=skills,
             education=education,
             experience=experience,
             social_urls=social_urls,

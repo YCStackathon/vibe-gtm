@@ -85,9 +85,6 @@ export function CyberFileDropZone({ onFileSelect, isLoading }: CyberFileDropZone
             <p className="neon-cyan font-mono text-sm tracking-wider animate-pulse">
               EXTRACTING_IDENTITY...
             </p>
-            <div className="mt-4 w-48 h-1 bg-[var(--panel-elevated)] rounded overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-[var(--neon-cyan)] to-[var(--neon-magenta)] animate-pulse" style={{ width: '60%' }} />
-            </div>
           </div>
         ) : (
           <div className="flex flex-col items-center py-8">
