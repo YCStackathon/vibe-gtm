@@ -60,8 +60,8 @@ If a PRD exists in `docs/`:
 ### File Location
 
 - **Path**: `docs/stories/{STORY-ID}-{short-description}.md`
-- **Example**: `docs/stories/CRONTY-1-cron-job-scheduling.md`
-- **Format**: `{PREFIX}-{NUMBER}` (e.g., CRONTY-1, CRONTY-2)
+- **Example**: `docs/stories/GTM-1-cron-job-scheduling.md`
+- **Format**: `{PREFIX}-{NUMBER}` (e.g., GTM-1, GTM-2)
 
 ### Story Template
 
@@ -179,7 +179,7 @@ Then [expected error handling]
 ````markdown
 # User Story: Cron Job Scheduling
 
-**Story ID**: CRONTY-1
+**Story ID**: GTM-1
 **Created**: 2025-01-24
 
 ## User Persona
@@ -318,7 +318,7 @@ c) Should jobs support timezone configuration?
 When creating stories, describe the feature and any constraints or requirements.
 
 ```
-/story CRONTY-1 Cron job scheduling
+/story GTM-1 Cron job scheduling
 
 Implement the core cron job scheduling tools: create, list, and delete jobs.
 
@@ -326,7 +326,7 @@ Jobs should be persisted to SQLite and support standard 5-field cron expressions
 ```
 
 ```
-/story CRONTY-2 Job execution history
+/story GTM-2 Job execution history
 
 Add a resource to view job execution history with timestamps, status, and output.
 
@@ -334,7 +334,7 @@ Support filtering by job ID, date range, and execution status (success/failure).
 ```
 
 ```
-/story CRONTY-3 Notification prompts
+/story GTM-3 Notification prompts
 
 Create prompts that help users set up common notification patterns like daily summaries or error alerts.
 ```
