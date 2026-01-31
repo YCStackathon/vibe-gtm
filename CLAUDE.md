@@ -41,6 +41,17 @@ npm run lint         # Lint
 - Backend uses pydantic-settings with `.env` file support
 - Frontend env vars must be prefixed with `VITE_`
 
+## UI Design
+
+**Style:** Retro-futurism / Cyberpunk Terminal
+
+When working on frontend UI components, ALWAYS use the `frontend-design-pro` skill to generate designs that match the established aesthetic:
+- Dark backgrounds (`#0a0a0f`, `#0d1117`, `#161b22`)
+- Neon accents (cyan `#00fff5`, magenta `#ff00ff`, green `#39ff14`, amber `#ffb800`)
+- Monospace fonts (JetBrains Mono, IBM Plex Mono)
+- Terminal/CLI-inspired elements (scanlines, glowing borders, cursor blink)
+- CRT effects (flicker, chromatic aberration on hover)
+
 ## Git Rules
 
 - Never commit or push without explicit user request
