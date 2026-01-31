@@ -9,7 +9,68 @@ from schemas.profile import Education, Experience, FounderProfile, SocialUrls
 
 logger = logging.getLogger(__name__)
 
-PIPELINE_ID = "k972we4n1wzv13jgbnsk9hmqa5809h89"
+EXTRACT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "profile": {
+            "type": "object",
+            "properties": {
+                "firstName": {"type": "string", "description": "First name"},
+                "middleName": {"type": "string", "description": "Middle name, optional"},
+                "lastName": {"type": "string", "description": "Last name"},
+                "currentJobTitle": {"type": "string", "description": "Current or last job title"},
+            },
+            "required": ["firstName", "lastName", "currentJobTitle"],
+        },
+        "professionalExperience": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "jobTitle": {"type": "string"},
+                    "companyName": {"type": "string"},
+                    "startDate": {"type": "string", "format": "date"},
+                    "endDate": {"type": "string", "format": "date"},
+                    "responsibilities": {"type": "string"},
+                },
+            },
+        },
+        "skills": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "skillName": {"type": "string"},
+                },
+            },
+        },
+        "summary": {"type": "string", "description": "Brief professional summary"},
+        "urls": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "urlType": {"type": "string", "description": "Type (LinkedIn, GitHub, etc)"},
+                    "url": {"type": "string"},
+                },
+            },
+        },
+        "education": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "institutionName": {"type": "string"},
+                    "degree": {"type": "string"},
+                    "fieldOfStudy": {"type": "string"},
+                    "startDate": {"type": "string", "format": "date"},
+                    "endDate": {"type": "string", "format": "date"},
+                },
+            },
+        },
+    },
+    "required": ["profile", "professionalExperience", "skills", "summary", "urls", "education"],
+}
 
 
 def get_value(obj: dict | None, key: str, default=None):
@@ -35,7 +96,7 @@ def parse_year(date_str: str | None) -> int | None:
 
 
 async def extract_profile_from_pdf(file_content: bytes) -> FounderProfile:
-    """Extract founder profile from PDF using Reducto pipeline."""
+    """Extract founder profile from PDF using Reducto extract API."""
     logger.info("Starting PDF extraction...")
 
     client = Reducto(api_key=settings.reducto_api_key)
@@ -48,71 +109,70 @@ async def extract_profile_from_pdf(file_content: bytes) -> FounderProfile:
         logger.info("Uploading to Reducto...")
         upload = client.upload(file=tmp_path)
 
-        logger.info("Running pipeline...")
-        result = client.pipeline.run(
+        logger.info("Running extract...")
+        result = client.extract.run(
             input=upload,
-            pipeline_id=PIPELINE_ID,
+            instructions={"schema": EXTRACT_SCHEMA},
+            settings={"citations": {"enabled": True}},
         )
 
-        # Navigate to extract result
+        # Get result data
         raw = result.result
         if hasattr(raw, "model_dump"):
             raw = raw.model_dump()
         elif hasattr(raw, "dict"):
             raw = raw.dict()
 
-        extract_data = raw.get("extract", {}).get("result", {})
-        parse_data = raw.get("parse", {}).get("result", {})
+        logger.info(f"Raw extract result keys: {raw.keys() if raw else 'None'}")
 
-        # Get name from parse blocks (it's a Section Header)
-        name = None
-        chunks = parse_data.get("chunks", [])
-        if chunks:
-            for block in chunks[0].get("blocks", []):
-                if block.get("type") == "Section Header" and block.get("content"):
-                    content = block["content"]
-                    # First section header that looks like a name (not Contact/Languages/etc)
-                    if content not in ["Contact", "Languages", "Experience", "Education"]:
-                        name = content
-                        break
+        # Parse profile info - handle nested citation structure
+        profile_data = raw.get("profile", {})
+        # Profile itself might be wrapped in {value: ..., citations: ...}
+        if isinstance(profile_data, dict) and "value" in profile_data:
+            profile_data = profile_data.get("value", {})
 
-        # Get phone and social URLs
+        logger.info(f"Profile data: {profile_data}")
+
+        first_name = get_value(profile_data, "firstName")
+        middle_name = get_value(profile_data, "middleName")
+        last_name = get_value(profile_data, "lastName")
+        current_job_title = get_value(profile_data, "currentJobTitle")
+
+        # Build full name
+        name_parts = [p for p in [first_name, middle_name, last_name] if p]
+        name = " ".join(name_parts) if name_parts else None
+
+        # Parse social URLs
         phone = None
         social_urls = SocialUrls()
-        for url_obj in extract_data.get("urls", []):
+        for url_obj in raw.get("urls", []):
             url_type = get_value(url_obj, "urlType", "")
             url_val = get_value(url_obj, "url", "")
-            if url_type == "Mobile":
+            if not url_val:
+                continue
+            # Ensure full URL
+            if not url_val.startswith("http"):
+                url_val = f"https://{url_val}"
+
+            url_type_lower = url_type.lower() if url_type else ""
+            if "mobile" in url_type_lower or "phone" in url_type_lower:
                 phone = url_val
-            elif url_type == "LinkedIn":
-                # Ensure it's a full URL
-                if url_val and not url_val.startswith("http"):
-                    url_val = f"https://{url_val}"
+            elif "linkedin" in url_type_lower:
                 social_urls.linkedin = url_val
-            elif url_type == "GitHub":
-                if url_val and not url_val.startswith("http"):
-                    url_val = f"https://{url_val}"
+            elif "github" in url_type_lower:
                 social_urls.github = url_val
-            elif url_type == "Twitter":
-                if url_val and not url_val.startswith("http"):
-                    url_val = f"https://{url_val}"
+            elif "twitter" in url_type_lower or "x.com" in url_type_lower:
                 social_urls.twitter = url_val
-            elif url_type == "Instagram":
-                if url_val and not url_val.startswith("http"):
-                    url_val = f"https://{url_val}"
+            elif "instagram" in url_type_lower:
                 social_urls.instagram = url_val
-            elif url_type == "Facebook":
-                if url_val and not url_val.startswith("http"):
-                    url_val = f"https://{url_val}"
+            elif "facebook" in url_type_lower:
                 social_urls.facebook = url_val
-            elif url_type == "Website":
-                if url_val and not url_val.startswith("http"):
-                    url_val = f"https://{url_val}"
+            elif "website" in url_type_lower or "personal" in url_type_lower:
                 social_urls.website = url_val
 
         # Parse experience
         experience = []
-        for exp in extract_data.get("professionalExperience", []):
+        for exp in raw.get("professionalExperience", []):
             experience.append(
                 Experience(
                     company=get_value(exp, "companyName"),
@@ -125,7 +185,7 @@ async def extract_profile_from_pdf(file_content: bytes) -> FounderProfile:
 
         # Parse education
         education = []
-        for edu in extract_data.get("education", []):
+        for edu in raw.get("education", []):
             education.append(
                 Education(
                     institution=get_value(edu, "institutionName"),
@@ -136,15 +196,33 @@ async def extract_profile_from_pdf(file_content: bytes) -> FounderProfile:
                 )
             )
 
+        # Parse skills
+        skills = []
+        for skill in raw.get("skills", []):
+            skill_name = get_value(skill, "skillName")
+            if skill_name:
+                skills.append(skill_name)
+            elif isinstance(skill, str):
+                skills.append(skill)
+
         logger.info(f"Extracted profile for: {name}")
+        logger.info(f"  - First: {first_name}, Last: {last_name}")
+        logger.info(f"  - Job title: {current_job_title}")
+        logger.info(f"  - {len(experience)} experiences")
+        logger.info(f"  - {len(education)} education entries")
+        logger.info(f"  - {len(skills)} skills")
 
         return FounderProfile(
             name=name,
-            email=None,  # Not in this pipeline's schema
+            first_name=first_name,
+            middle_name=middle_name,
+            last_name=last_name,
+            current_job_title=current_job_title,
+            email=None,
             phone=phone,
-            location="San Francisco, California",  # Could parse from experience
-            summary=get_value(extract_data, "summary"),
-            skills=extract_data.get("skills", []),
+            location=None,
+            summary=get_value(raw, "summary"),
+            skills=skills,
             education=education,
             experience=experience,
             social_urls=social_urls,

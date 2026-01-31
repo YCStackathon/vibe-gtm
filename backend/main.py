@@ -22,17 +22,18 @@ db_client: AsyncIOMotorClient | None = None
 
 def get_database():
     return db_client[settings.database_name]
+from database import get_database, set_client
+from routers import campaigns, identity
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    global db_client
-    db_client = AsyncIOMotorClient(settings.mongodb_uri)
+    client = AsyncIOMotorClient(settings.mongodb_uri)
+    set_client(client)
     yield
     # Shutdown
-    if db_client:
-        db_client.close()
+    client.close()
 
 
 app = FastAPI(title="Vibe GTM API", lifespan=lifespan)
@@ -53,6 +54,7 @@ app.add_middleware(
 # Include routers
 app.include_router(identity.router)
 app.include_router(proposal.router)
+app.include_router(campaigns.router)
 
 
 @app.get("/api/health")

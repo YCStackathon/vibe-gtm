@@ -1,7 +1,11 @@
+import logging
+
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from schemas.profile import ProfileExtractionResponse
 from services.reducto import extract_profile_from_pdf
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/identity", tags=["identity"])
 
@@ -30,9 +34,12 @@ async def extract_profile(file: UploadFile = File(...)):
         )
 
     try:
+        logger.info(f"Extracting profile from {file.filename}")
         profile = await extract_profile_from_pdf(content)
+        logger.info(f"Successfully extracted profile: {profile.name}")
         return ProfileExtractionResponse(profile=profile)
     except Exception as e:
+        logger.exception(f"Failed to extract profile from {file.filename}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to extract profile: {e!s}",

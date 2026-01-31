@@ -2,7 +2,7 @@ import type { FounderProfile } from '../types/profile'
 
 interface CyberProfileCardProps {
   profile: FounderProfile
-  onReset: () => void
+  onReset?: () => void
 }
 
 export function CyberProfileCard({ profile, onReset }: CyberProfileCardProps) {
@@ -14,23 +14,32 @@ export function CyberProfileCard({ profile, onReset }: CyberProfileCardProps) {
           <div className="w-2 h-2 rounded-full bg-[var(--neon-green)]" />
           <span className="font-mono text-xs text-[var(--text-muted)]">IDENTITY_VERIFIED</span>
         </div>
-        <button
-          onClick={onReset}
-          className="px-3 py-1 text-xs font-mono border border-[var(--border-dim)] rounded
-                     hover:border-[var(--neon-magenta)] hover:text-[var(--neon-magenta)]
-                     transition-colors glitch-hover"
-        >
-          [RESET]
-        </button>
+        {onReset && (
+          <button
+            onClick={onReset}
+            className="px-3 py-1 text-xs font-mono border border-[var(--border-dim)] rounded
+                       hover:border-[var(--neon-magenta)] hover:text-[var(--neon-magenta)]
+                       transition-colors glitch-hover"
+          >
+            [RESET]
+          </button>
+        )}
       </div>
 
       <div className="p-6">
         {/* Name & Summary */}
         <div className="mb-6">
           <div className="flex items-start justify-between mb-2">
-            <h2 className="text-2xl font-bold neon-cyan">
-              {profile.name || 'UNKNOWN_ENTITY'}
-            </h2>
+            <div>
+              <h2 className="text-2xl font-bold neon-cyan">
+                {profile.name || 'UNKNOWN_ENTITY'}
+              </h2>
+              {profile.current_job_title && (
+                <p className="text-sm text-[var(--neon-magenta)] font-mono mt-1">
+                  {profile.current_job_title}
+                </p>
+              )}
+            </div>
             <span className="text-xs font-mono text-[var(--text-muted)] bg-[var(--panel-elevated)] px-2 py-1 rounded">
               ID:{Math.random().toString(36).substring(2, 8).toUpperCase()}
             </span>
