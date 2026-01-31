@@ -103,3 +103,44 @@ npm run build
 # Lint
 npm run lint
 ```
+
+## Deployment (Render)
+
+### 1. Set up MongoDB Atlas
+
+1. Create a free cluster at [mongodb.com/atlas](https://www.mongodb.com/atlas)
+2. Get your connection string (looks like `mongodb+srv://user:pass@cluster.mongodb.net/`)
+
+### 2. Deploy to Render
+
+1. Push this repo to GitHub
+2. Go to [render.com](https://render.com) → New → Blueprint
+3. Connect your GitHub repo
+4. Render will auto-detect `render.yaml` and create both services
+5. Set the `MONGODB_URI` environment variable in the backend service
+
+### 3. Custom Domain Setup
+
+Add these DNS records to `useparadigm.app`:
+
+| Type | Name | Value |
+|------|------|-------|
+| CNAME | `gtm` | `vibe-gtm-web.onrender.com` |
+| CNAME | `api.gtm` | `vibe-gtm-api.onrender.com` |
+
+Render will auto-provision SSL certificates.
+
+## Environment Variables
+
+### Backend
+
+| Variable | Description |
+|----------|-------------|
+| `MONGODB_URI` | MongoDB connection string |
+| `DATABASE_NAME` | Database name (default: `vibe_gtm`) |
+
+### Frontend
+
+| Variable | Description |
+|----------|-------------|
+| `VITE_API_URL` | Backend API URL (set in render.yaml) |

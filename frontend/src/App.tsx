@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 
+const API_URL = import.meta.env.VITE_API_URL || ''
+
 function App() {
   const [message, setMessage] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/hello')
+    fetch(`${API_URL}/api/hello`)
       .then((res) => {
         if (!res.ok) throw new Error('Failed to fetch')
         return res.json()
