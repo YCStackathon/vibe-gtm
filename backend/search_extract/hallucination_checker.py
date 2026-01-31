@@ -1,8 +1,8 @@
 import asyncio
 from datetime import UTC, datetime
 
-from backend.config import settings
-from backend.crawling.schemas import (
+from config import settings
+from crawling.schemas import (
     Claim,
     ClaimVerified,
     PersonClaims,

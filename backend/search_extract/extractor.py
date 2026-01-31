@@ -1,5 +1,5 @@
 
-from backend.search_extract.schemas import CollectedPage, ExtractedPage
+from search_extract.schemas import CollectedPage, ExtractedPage
 from dotenv import load_dotenv
 from openai import OpenAI
 from pydantic import BaseModel

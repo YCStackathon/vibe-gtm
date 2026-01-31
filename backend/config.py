@@ -14,9 +14,6 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ROOT_DIR / ".env"
-
-        env_file = ".env"
-
         extra = "ignore"
 
 

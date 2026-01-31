@@ -1,4 +1,4 @@
-from backend.crawling.schemas import Claim
+from crawling.schemas import Claim
 from openai import OpenAI
 
 from .schemas import ProposalResult

@@ -1,15 +1,15 @@
 import asyncio
 from datetime import UTC, datetime
 
-from backend.config import settings
-from backend.crawling.schemas import PersonClaims
-from backend.search_extract.collector import collect_pages
-from backend.search_extract.extractor import extract_from_pages
-from backend.search_extract.hallucination_checker import (
+from config import settings
+from crawling.schemas import PersonClaims
+from search_extract.collector import collect_pages
+from search_extract.extractor import extract_from_pages
+from search_extract.hallucination_checker import (
     run_from_db as check_hallucinations,
 )
-from backend.search_extract.schemas import ExtractedPage
-from backend.search_extract.searcher import search
+from search_extract.schemas import ExtractedPage
+from search_extract.searcher import search
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
 
