@@ -23,7 +23,7 @@ db_client: AsyncIOMotorClient | None = None
 def get_database():
     return db_client[settings.database_name]
 from database import get_database, set_client
-from routers import campaigns, identity, leads
+from routers import campaigns, extraction, identity, leads
 
 
 @asynccontextmanager
@@ -55,6 +55,7 @@ app.add_middleware(
 app.include_router(identity.router)
 app.include_router(proposal.router)
 app.include_router(campaigns.router)
+app.include_router(extraction.router)
 app.include_router(leads.router)
 
 

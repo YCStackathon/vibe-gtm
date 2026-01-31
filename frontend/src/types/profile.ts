@@ -42,4 +42,5 @@ export interface FounderProfile {
 export interface ProfileExtractionResponse {
   profile: FounderProfile
   citations?: Record<string, unknown>
+  extraction_task_id?: string
 }

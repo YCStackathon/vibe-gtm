@@ -2,9 +2,13 @@ import type { ProfileExtractionResponse } from '../types/profile'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 
-export async function extractProfile(file: File): Promise<ProfileExtractionResponse> {
+export async function extractProfile(
+  file: File,
+  campaignId: string
+): Promise<ProfileExtractionResponse> {
   const formData = new FormData()
   formData.append('file', file)
+  formData.append('campaign_id', campaignId)
 
   const response = await fetch(`${API_URL}/api/identity/extract`, {
     method: 'POST',

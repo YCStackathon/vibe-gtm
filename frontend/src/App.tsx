@@ -9,7 +9,9 @@ import { CyberLeadsInput } from './components/CyberLeadsInput'
 import { CyberProfileCard } from './components/CyberProfileCard'
 import { CyberSocialUrlsInput } from './components/CyberSocialUrlsInput'
 import { CyberTabs } from './components/CyberTabs'
+import { ExtractionLogStream } from './components/ExtractionLogStream'
 import { CampaignProvider, useCampaign } from './context/CampaignContext'
+import { useExtractionStream } from './hooks/useExtractionStream'
 import type { SocialUrls } from './types/profile'
 
 function AppContent() {
@@ -32,12 +34,15 @@ function AppContent() {
 
   const [error, setError] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [extractionTaskId, setExtractionTaskId] = useState<string | null>(null)
   const [terminalLogs, setTerminalLogs] = useState<string[]>([
     '> VIBE_GTM v1.0.0 initialized',
     '> Awaiting identity payload...',
   ])
   const [activeTab, setActiveTab] = useState<'founder_identity' | 'leads'>('founder_identity')
   const [isParsing, setIsParsing] = useState(false)
+
+  const extractionStream = useExtractionStream(extractionTaskId)
 
   const addLog = (message: string) => {
     setTerminalLogs((prev) => [...prev, `> ${message}`])
@@ -48,14 +53,21 @@ function AppContent() {
 
     startProcessing()
     setError(null)
+    setExtractionTaskId(null)
     addLog(`Processing: ${file.name}`)
     addLog('Connecting to Reducto extract API...')
 
     try {
-      const response = await extractProfile(file)
+      const response = await extractProfile(file, currentCampaign.id)
       finishProcessing(response.profile)
       addLog('Identity extraction complete')
       addLog(`Subject identified: ${response.profile.name || 'UNKNOWN'}`)
+
+      // Start streaming extraction logs if task_id is returned
+      if (response.extraction_task_id) {
+        setExtractionTaskId(response.extraction_task_id)
+        addLog(`Whoami extraction started: ${response.extraction_task_id}`)
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Extraction failed'
       setError(msg)
@@ -285,7 +297,20 @@ function AppContent() {
                       />
                     )}
 
-                    {error && (
+                    {/* Extraction Log Stream */}
+                  {extractionTaskId && extractionStream.status !== 'idle' && (
+                    <div className="mt-6">
+                      <ExtractionLogStream
+                        state={extractionStream}
+                        onClose={() => {
+                          setExtractionTaskId(null)
+                          extractionStream.reset()
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  {error && (
                       <div className="mt-4 p-4 border border-red-500/50 bg-red-500/10 rounded font-mono text-sm">
                         <span className="text-red-400">SYSTEM_ERROR:</span>
                         <span className="text-[var(--text-secondary)] ml-2">{error}</span>

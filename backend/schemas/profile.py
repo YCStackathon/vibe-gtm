@@ -45,3 +45,4 @@ class FounderProfile(BaseModel):
 class ProfileExtractionResponse(BaseModel):
     profile: FounderProfile
     citations: dict | None = None
+    extraction_task_id: str | None = None
