@@ -1,6 +1,11 @@
 import asyncio
 from datetime import UTC, datetime
 
+from bson import ObjectId
+from firecrawl import Firecrawl
+from motor.motor_asyncio import AsyncIOMotorClient
+from openai import OpenAI
+
 from config import settings
 from crawling.schemas import (
     Claim,
@@ -9,10 +14,6 @@ from crawling.schemas import (
     PersonClaimsVerified,
     VerificationAnalysis,
 )
-from bson import ObjectId
-from firecrawl import Firecrawl
-from motor.motor_asyncio import AsyncIOMotorClient
-from openai import OpenAI
 
 
 def scrape_url(firecrawl: Firecrawl, url: str) -> str | None:

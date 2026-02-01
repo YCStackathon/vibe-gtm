@@ -1,6 +1,9 @@
 import asyncio
 from datetime import UTC, datetime
 
+from motor.motor_asyncio import AsyncIOMotorClient
+from pydantic import BaseModel
+
 from config import settings
 from crawling.schemas import PersonClaims
 from search_extract.collector import collect_pages
@@ -10,8 +13,6 @@ from search_extract.hallucination_checker import (
 )
 from search_extract.schemas import ExtractedPage
 from search_extract.searcher import search
-from motor.motor_asyncio import AsyncIOMotorClient
-from pydantic import BaseModel
 
 
 def run_pipeline(

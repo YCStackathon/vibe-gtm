@@ -1,7 +1,8 @@
 from datetime import datetime
 
-from crawling.schemas import Claim
 from pydantic import BaseModel, Field
+
+from crawling.schemas import Claim
 
 
 class UserProfile(BaseModel):

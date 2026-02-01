@@ -1,10 +1,14 @@
 import logging
+from datetime import UTC, datetime
 
+from bson import ObjectId
 from fastapi import APIRouter, BackgroundTasks, HTTPException
 from openai import OpenAI
 
 from config import settings
+from crawling.schemas import ClaimVerified
 from database import get_database
+from proposal.generator import SCORE_LABELS, generate_proposal
 from schemas.leads import (
     ExtractLeadRequest,
     ExtractLeadResponse,
@@ -86,6 +90,93 @@ async def parse_leads(request: ParseLeadsRequest) -> ParseLeadsResponse:
         raise HTTPException(status_code=500, detail=f"Failed to parse leads: {e!s}")
 
 
+async def _generate_proposal_for_lead(
+    db,
+    campaign_id: str,
+    lead_id: str,
+    verified_id: str,
+    task_id: str,
+    prefix: str,
+):
+    """Generate a proposal matching founder and lead claims."""
+    # Get campaign with founder claims
+    campaign_doc = await db.campaigns.find_one({"_id": ObjectId(campaign_id)})
+    if not campaign_doc:
+        return
+
+    whoami_id = campaign_doc.get("whoami_extraction_id")
+    if not whoami_id:
+        await add_log(
+            task_id,
+            f"{prefix} Skipping proposal: no founder identity",
+            LogType.INFO,
+        )
+        return
+
+    # Get founder's verified claims
+    whoami_doc = await db.verified_claims.find_one({"_id": ObjectId(whoami_id)})
+    if not whoami_doc:
+        return
+
+    founder_name = campaign_doc.get("profile", {}).get("name", "Founder")
+    founder_claims = []
+    for person in whoami_doc.get("verified_persons", []):
+        founder_claims.extend([ClaimVerified(**c) for c in person.get("claims", [])])
+
+    if not founder_claims:
+        await add_log(
+            task_id,
+            f"{prefix} Skipping proposal: no founder claims",
+            LogType.INFO,
+        )
+        return
+
+    # Get lead's verified claims
+    lead_doc = await db.verified_claims.find_one({"_id": ObjectId(verified_id)})
+    if not lead_doc:
+        return
+
+    lead_persons = lead_doc.get("verified_persons", [])
+    lead_name = (
+        lead_persons[0].get("person_name", "Unknown") if lead_persons else "Unknown"
+    )
+    lead_claims = []
+    for person in lead_persons:
+        lead_claims.extend([ClaimVerified(**c) for c in person.get("claims", [])])
+
+    if not lead_claims:
+        await add_log(
+            task_id,
+            f"{prefix} Skipping proposal: no lead claims found",
+            LogType.INFO,
+        )
+        return
+
+    await add_log(task_id, f"{prefix} Generating proposal...", LogType.INFO)
+
+    # Generate proposal
+    result = generate_proposal(founder_name, founder_claims, lead_name, lead_claims)
+
+    # Save to database
+    proposal_doc = {
+        "campaign_id": campaign_id,
+        "lead_id": lead_id,
+        "lead_name": lead_name,
+        "score": result.score,
+        "score_label": SCORE_LABELS[result.score],
+        "reason": result.reason,
+        "matches": [m.model_dump() for m in result.matches],
+        "created_at": datetime.now(UTC),
+    }
+
+    await db.proposals.insert_one(proposal_doc)
+    await add_log(
+        task_id,
+        f"{prefix} Proposal generated (score: {SCORE_LABELS[result.score]})",
+        LogType.SUCCESS,
+    )
+
+
 async def run_lead_extraction_background(
     task_id: str,
     campaign_id: str,
@@ -126,6 +217,19 @@ async def run_lead_extraction_background(
 
         await add_log(task_id, f"{prefix} Extraction complete", LogType.SUCCESS)
         await complete_task(task_id, verified_id)
+
+        # Auto-generate proposal for this lead
+        try:
+            await _generate_proposal_for_lead(
+                db, campaign_id, lead_id, verified_id, task_id, prefix
+            )
+        except Exception as proposal_error:
+            logger.warning(f"Failed to generate proposal for lead {lead_id}: {proposal_error}")
+            await add_log(
+                task_id,
+                f"{prefix} Proposal generation failed (non-blocking)",
+                LogType.INFO,
+            )
 
     except Exception as e:
         logger.exception(f"Lead extraction failed for task {task_id}")
