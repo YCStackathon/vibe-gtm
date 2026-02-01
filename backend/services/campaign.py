@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from typing import Any
 
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -8,6 +9,7 @@ from schemas.campaign import (
     CampaignFull,
     CampaignListItem,
 )
+from schemas.leads import Lead, LeadStatus
 from schemas.profile import FounderProfile
 
 COLLECTION = "campaigns"
@@ -47,6 +49,18 @@ async def create_campaign(
     )
 
 
+def _parse_leads(raw_leads: list[Any]) -> list[Lead]:
+    """Parse leads from database format (handles old string and new object format)."""
+    leads = []
+    for item in raw_leads:
+        if isinstance(item, str):
+            # Legacy string format - skip (shouldn't exist after migration)
+            continue
+        elif isinstance(item, dict):
+            leads.append(Lead(**item))
+    return leads
+
+
 async def get_campaign(
     db: AsyncIOMotorDatabase, campaign_id: str
 ) -> CampaignFull | None:
@@ -62,6 +76,8 @@ async def get_campaign(
     if doc.get("profile"):
         profile = FounderProfile(**doc["profile"])
 
+    leads = _parse_leads(doc.get("leads", []))
+
     return CampaignFull(
         id=str(doc["_id"]),
         name=doc["name"],
@@ -69,7 +85,7 @@ async def get_campaign(
         updated_at=doc["updated_at"],
         profile=profile,
         whoami_extraction_id=doc.get("whoami_extraction_id"),
-        leads=doc.get("leads", []),
+        leads=leads,
     )
 
 
@@ -110,17 +126,58 @@ async def update_campaign_extraction_id(
 
 
 async def update_campaign_leads(
-    db: AsyncIOMotorDatabase, campaign_id: str, leads: list[str]
+    db: AsyncIOMotorDatabase, campaign_id: str, leads: list[Any]
 ) -> bool:
+    """Update campaign leads. Accepts Lead objects or dicts."""
     try:
+        # Convert Lead objects to dicts for storage
+        leads_data = []
+        for lead in leads:
+            if hasattr(lead, "model_dump"):
+                leads_data.append(lead.model_dump())
+            elif isinstance(lead, dict):
+                leads_data.append(lead)
+            # Skip any other types
+
         result = await db[COLLECTION].update_one(
             {"_id": ObjectId(campaign_id)},
             {
                 "$set": {
-                    "leads": leads,
+                    "leads": leads_data,
                     "updated_at": datetime.now(UTC),
                 }
             },
+        )
+        return result.matched_count > 0
+    except Exception:
+        return False
+
+
+async def update_lead_status(
+    db: AsyncIOMotorDatabase,
+    campaign_id: str,
+    lead_id: str,
+    status: LeadStatus,
+    extraction_task_id: str | None = None,
+    verified_claims_id: str | None = None,
+    error: str | None = None,
+) -> bool:
+    """Update a specific lead's status within a campaign."""
+    try:
+        update_fields: dict[str, Any] = {
+            "leads.$.status": status.value,
+            "updated_at": datetime.now(UTC),
+        }
+        if extraction_task_id is not None:
+            update_fields["leads.$.extraction_task_id"] = extraction_task_id
+        if verified_claims_id is not None:
+            update_fields["leads.$.verified_claims_id"] = verified_claims_id
+        if error is not None:
+            update_fields["leads.$.error"] = error
+
+        result = await db[COLLECTION].update_one(
+            {"_id": ObjectId(campaign_id), "leads.id": lead_id},
+            {"$set": update_fields},
         )
         return result.matched_count > 0
     except Exception:

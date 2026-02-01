@@ -1,4 +1,4 @@
-import type { Campaign, CampaignListItem } from '../types/campaign'
+import type { Campaign, CampaignListItem, Lead } from '../types/campaign'
 import type { FounderProfile } from '../types/profile'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
@@ -56,7 +56,7 @@ export async function updateCampaignProfile(
   }
 }
 
-export async function updateCampaignLeads(id: string, leads: string[]): Promise<void> {
+export async function updateCampaignLeads(id: string, leads: Lead[]): Promise<void> {
   const response = await fetch(`${API_URL}/api/campaigns/${id}/leads`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
