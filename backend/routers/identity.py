@@ -91,20 +91,25 @@ async def extract_profile(
         await campaign_service.update_campaign_profile(db, campaign_id, profile)
 
         # Build query for whoami extraction
-        query_parts = [profile.name]
+        query_parts = []
+        if profile.name:
+            query_parts.append(profile.name)
         if profile.current_job_title:
             query_parts.append(profile.current_job_title)
-        query = " ".join(query_parts)
+        query = " ".join(query_parts) if query_parts else None
 
-        # Create extraction task and start background processing
-        task = create_task(campaign_id, query)
-        background_tasks.add_task(
-            run_extraction_background, task.id, campaign_id, query
-        )
+        # Create extraction task and start background processing (only if we have a query)
+        extraction_task_id = None
+        if query:
+            task = create_task(campaign_id, query)
+            background_tasks.add_task(
+                run_extraction_background, task.id, campaign_id, query
+            )
+            extraction_task_id = task.id
 
         return ProfileExtractionResponse(
             profile=profile,
-            extraction_task_id=task.id,
+            extraction_task_id=extraction_task_id,
         )
 
     except Exception as e:
