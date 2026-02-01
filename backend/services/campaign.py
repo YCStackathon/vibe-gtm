@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, datetime
 from typing import Any
 
@@ -168,10 +169,22 @@ async def append_leads_to_campaign(
 ) -> bool:
     """Append new leads to existing campaign leads."""
     try:
+        # Convert string queries to Lead objects
+        lead_dicts = [
+            {
+                "id": str(uuid.uuid4()),
+                "query": query,
+                "status": LeadStatus.PENDING.value,
+                "extraction_task_id": None,
+                "verified_claims_id": None,
+                "error": None,
+            }
+            for query in new_leads
+        ]
         result = await db[COLLECTION].update_one(
             {"_id": ObjectId(campaign_id)},
             {
-                "$push": {"leads": {"$each": new_leads}},
+                "$push": {"leads": {"$each": lead_dicts}},
                 "$set": {"updated_at": datetime.now(UTC)},
             },
         )
