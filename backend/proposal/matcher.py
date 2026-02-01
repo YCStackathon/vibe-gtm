@@ -1,7 +1,8 @@
-from crawling.schemas import Claim
 from openai import OpenAI
 
 from config import settings
+from crawling.schemas import Claim
+
 from .schemas import ProposalResult
 
 

@@ -1,6 +1,7 @@
-from search_extract.schemas import SearchResult
 from dotenv import load_dotenv
 from firecrawl import Firecrawl
+
+from search_extract.schemas import SearchResult
 
 load_dotenv()
 

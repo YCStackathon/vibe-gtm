@@ -7,6 +7,7 @@ import { CyberEmptyState } from './components/CyberEmptyState'
 import { CyberFileDropZone } from './components/CyberFileDropZone'
 import { CyberLeadsInput } from './components/CyberLeadsInput'
 import { CyberProfileCard } from './components/CyberProfileCard'
+import { CyberProposals } from './components/CyberProposals'
 import { CyberSocialUrlsInput } from './components/CyberSocialUrlsInput'
 import { CyberTabs } from './components/CyberTabs'
 import { CampaignProvider, useCampaign } from './context/CampaignContext'
@@ -40,7 +41,7 @@ function AppContent() {
     '> VIBE_GTM v1.0.0 initialized',
     '> Awaiting identity payload...',
   ])
-  const [activeTab, setActiveTab] = useState<'founder_identity' | 'leads'>('founder_identity')
+  const [activeTab, setActiveTab] = useState<'founder_identity' | 'leads' | 'proposals'>('founder_identity')
   const [isParsing, setIsParsing] = useState(false)
 
   const extractionStream = useExtractionStream(extractionTaskId)
@@ -362,9 +363,10 @@ function AppContent() {
                 tabs={[
                   { id: 'founder_identity', label: 'Founder Identity' },
                   { id: 'leads', label: 'Leads' },
+                  { id: 'proposals', label: 'Proposals' },
                 ]}
                 activeTab={activeTab}
-                onTabChange={(tab) => setActiveTab(tab as 'founder_identity' | 'leads')}
+                onTabChange={(tab) => setActiveTab(tab as 'founder_identity' | 'leads' | 'proposals')}
               />
 
               {/* Tab Content */}
@@ -420,14 +422,16 @@ function AppContent() {
                     </div>
                   )}
                 </div>
-              ) : (
+              ) : activeTab === 'leads' ? (
                 <CyberLeadsInput
                   leads={currentCampaign.leads || []}
                   leadStates={leadStates}
                   onParse={handleParseLeads}
                   isParsing={isParsing}
                 />
-              )}
+              ) : activeTab === 'proposals' ? (
+                <CyberProposals campaignId={currentCampaign.id} />
+              ) : null}
             </main>
 
             {/* Footer */}

@@ -1,8 +1,8 @@
-from search_extract.schemas import CollectedPage, ExtractedPage
 from openai import OpenAI
 from pydantic import BaseModel
 
 from config import settings
+from search_extract.schemas import CollectedPage, ExtractedPage
 
 MAX_CONTENT_LENGTH = 15000
 
