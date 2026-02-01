@@ -1,16 +1,11 @@
 import logging
 import re
 
-import resend
+import httpx
 
 from config import settings
 
 logger = logging.getLogger(__name__)
-
-
-def init_resend():
-    """Initialize Resend API client."""
-    resend.api_key = settings.resend_api_key
 
 
 def extract_campaign_id(email_address: str) -> str | None:
@@ -22,11 +17,16 @@ def extract_campaign_id(email_address: str) -> str | None:
 
 
 async def get_received_email_content(email_id: str) -> str | None:
-    """Fetch received email content from Resend API."""
+    """Fetch received email content from Resend Receiving API."""
     try:
-        init_resend()
-        email = resend.Emails.get(email_id)
-        return email.get("text") or email.get("html", "")
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"https://api.resend.com/emails/receiving/{email_id}",
+                headers={"Authorization": f"Bearer {settings.resend_api_key}"},
+            )
+            response.raise_for_status()
+            email = response.json()
+            return email.get("text") or email.get("html", "")
     except Exception as e:
         logger.exception(f"Failed to fetch email {email_id}: {e}")
         return None

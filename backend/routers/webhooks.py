@@ -5,7 +5,7 @@ from fastapi import APIRouter, Request
 from database import get_database
 from routers.leads import parse_leads_with_openai
 from services.campaign import append_leads_to_campaign
-from services.email import extract_campaign_id
+from services.email import extract_campaign_id, get_received_email_content
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +24,12 @@ async def handle_resend_webhook(request: Request):
         return {"status": "ignored", "reason": f"event type {event_type} not handled"}
 
     data = payload.get("data", {})
+    email_id = data.get("email_id")
     to_addresses = data.get("to", [])
 
-    if not to_addresses:
-        logger.warning("Resend webhook missing to addresses")
-        return {"status": "error", "reason": "missing to addresses"}
+    if not email_id or not to_addresses:
+        logger.warning("Resend webhook missing email_id or to addresses")
+        return {"status": "error", "reason": "missing email_id or to addresses"}
 
     to_address = to_addresses[0]
     campaign_id = extract_campaign_id(to_address)
@@ -37,11 +38,11 @@ async def handle_resend_webhook(request: Request):
         logger.warning(f"Could not extract campaign ID from: {to_address}")
         return {"status": "error", "reason": "invalid email address format"}
 
-    # Email content is in the webhook payload for inbound emails
-    email_content = data.get("text") or data.get("html", "")
+    # Fetch email content from Resend Receiving API
+    email_content = await get_received_email_content(email_id)
     if not email_content:
-        logger.error("No email content in webhook payload")
-        return {"status": "error", "reason": "no email content"}
+        logger.error(f"Failed to fetch email content for: {email_id}")
+        return {"status": "error", "reason": "failed to fetch email content"}
 
     try:
         leads = parse_leads_with_openai(email_content)
