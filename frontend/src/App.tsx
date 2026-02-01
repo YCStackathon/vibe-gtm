@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { extractProfile } from './api/identity'
 import { parseLeads } from './api/leads'
 import { CyberCampaignSidebar } from './components/CyberCampaignSidebar'
@@ -9,7 +9,6 @@ import { CyberLeadsInput } from './components/CyberLeadsInput'
 import { CyberProfileCard } from './components/CyberProfileCard'
 import { CyberSocialUrlsInput } from './components/CyberSocialUrlsInput'
 import { CyberTabs } from './components/CyberTabs'
-import { ExtractionLogStream } from './components/ExtractionLogStream'
 import { CampaignProvider, useCampaign } from './context/CampaignContext'
 import { useExtractionStream } from './hooks/useExtractionStream'
 import type { SocialUrls } from './types/profile'
@@ -43,6 +42,41 @@ function AppContent() {
   const [isParsing, setIsParsing] = useState(false)
 
   const extractionStream = useExtractionStream(extractionTaskId)
+  const lastLogIndexRef = useRef(0)
+
+  // Pipe extraction stream logs into the system log
+  useEffect(() => {
+    const newLogs = extractionStream.logs.slice(lastLogIndexRef.current)
+    if (newLogs.length > 0) {
+      setTerminalLogs((prev) => [
+        ...prev,
+        ...newLogs.map((log) => {
+          const prefix =
+            log.type === 'success' ? '[OK]' :
+            log.type === 'error' ? '[ERR]' :
+            log.type === 'progress' ? `[${log.progress ?? '...'}%]` :
+            '[>]'
+          return `${prefix} ${log.message}`
+        }),
+      ])
+      lastLogIndexRef.current = extractionStream.logs.length
+    }
+  }, [extractionStream.logs])
+
+  // Log extraction completion/error
+  useEffect(() => {
+    if (extractionStream.status === 'completed') {
+      setTerminalLogs((prev) => [...prev, `[OK] Extraction complete: ${extractionStream.extractionId}`])
+      setExtractionTaskId(null)
+      extractionStream.reset()
+      lastLogIndexRef.current = 0
+    } else if (extractionStream.status === 'error') {
+      setTerminalLogs((prev) => [...prev, `[ERR] Extraction failed: ${extractionStream.error}`])
+      setExtractionTaskId(null)
+      extractionStream.reset()
+      lastLogIndexRef.current = 0
+    }
+  }, [extractionStream.status, extractionStream.extractionId, extractionStream.error, extractionStream.reset])
 
   const addLog = (message: string) => {
     setTerminalLogs((prev) => [...prev, `> ${message}`])
@@ -296,19 +330,6 @@ function AppContent() {
                         onReset={canEditCurrentCampaign ? handleReset : undefined}
                       />
                     )}
-
-                    {/* Extraction Log Stream */}
-                  {extractionTaskId && extractionStream.status !== 'idle' && (
-                    <div className="mt-6">
-                      <ExtractionLogStream
-                        state={extractionStream}
-                        onClose={() => {
-                          setExtractionTaskId(null)
-                          extractionStream.reset()
-                        }}
-                      />
-                    </div>
-                  )}
 
                   {error && (
                       <div className="mt-4 p-4 border border-red-500/50 bg-red-500/10 rounded font-mono text-sm">
