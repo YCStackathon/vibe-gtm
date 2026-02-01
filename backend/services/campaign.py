@@ -4,6 +4,7 @@ from typing import Any
 from bson import ObjectId
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from config import settings
 from schemas.campaign import (
     CampaignCreate,
     CampaignFull,
@@ -13,6 +14,13 @@ from schemas.leads import Lead, LeadStatus
 from schemas.profile import FounderProfile
 
 COLLECTION = "campaigns"
+
+
+def generate_receiving_email(campaign_id: str) -> str | None:
+    """Generate the receiving email address for a campaign."""
+    if not settings.resend_receiving_domain:
+        return None
+    return f"leads-{campaign_id}@{settings.resend_receiving_domain}"
 
 
 async def list_campaigns(db: AsyncIOMotorDatabase) -> list[CampaignListItem]:
@@ -76,15 +84,18 @@ async def get_campaign(
     if doc.get("profile"):
         profile = FounderProfile(**doc["profile"])
 
+    campaign_id = str(doc["_id"])
     leads = _parse_leads(doc.get("leads", []))
 
     return CampaignFull(
-        id=str(doc["_id"]),
+        id=campaign_id,
         name=doc["name"],
         created_at=doc["created_at"],
         updated_at=doc["updated_at"],
         profile=profile,
         whoami_extraction_id=doc.get("whoami_extraction_id"),
+        leads=doc.get("leads", []),
+        receiving_email=generate_receiving_email(campaign_id),
         leads=leads,
     )
 
@@ -146,6 +157,22 @@ async def update_campaign_leads(
                     "leads": leads_data,
                     "updated_at": datetime.now(UTC),
                 }
+            },
+        )
+        return result.matched_count > 0
+    except Exception:
+        return False
+
+
+    db: AsyncIOMotorDatabase, campaign_id: str, new_leads: list[str]
+) -> bool:
+    """Append new leads to existing campaign leads."""
+    try:
+        result = await db[COLLECTION].update_one(
+            {"_id": ObjectId(campaign_id)},
+            {
+                "$push": {"leads": {"$each": new_leads}},
+                "$set": {"updated_at": datetime.now(UTC)},
             },
         )
         return result.matched_count > 0
