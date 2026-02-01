@@ -23,7 +23,7 @@ db_client: AsyncIOMotorClient | None = None
 def get_database():
     return db_client[settings.database_name]
 from database import get_database, set_client
-from routers import campaigns, extraction, identity, leads
+from routers import campaigns, extraction, identity, leads, webhooks
 
 
 @asynccontextmanager
@@ -57,6 +57,7 @@ app.include_router(proposal.router)
 app.include_router(campaigns.router)
 app.include_router(extraction.router)
 app.include_router(leads.router)
+app.include_router(webhooks.router)
 
 
 @app.get("/api/health")

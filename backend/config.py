@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     reducto_api_key: str = ""
     firecrawl_api_key: str = ""
     openai_api_key: str = ""
+    resend_api_key: str = ""
+    resend_receiving_domain: str = ""  # e.g., "abc123.resend.app"
 
     class Config:
         env_file = ROOT_DIR / ".env"

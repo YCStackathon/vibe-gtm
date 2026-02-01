@@ -20,6 +20,7 @@ class CampaignFull(CampaignListItem):
     profile: FounderProfile | None = None
     whoami_extraction_id: str | None = None
     leads: list[str] = []
+    receiving_email: str | None = None
 
 
 class CampaignProfileUpdate(BaseModel):
