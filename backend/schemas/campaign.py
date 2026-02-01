@@ -1,7 +1,9 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 
+from schemas.leads import Lead
 from schemas.profile import FounderProfile
 
 
@@ -28,4 +30,4 @@ class CampaignProfileUpdate(BaseModel):
 
 
 class CampaignLeadsUpdate(BaseModel):
-    leads: list[str]
+    leads: list[Any]  # Accept both Lead objects and legacy string format

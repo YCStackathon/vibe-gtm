@@ -43,6 +43,8 @@ class ExtractionTask:
     id: str
     campaign_id: str
     query: str
+    lead_id: str | None = None
+    lead_index: int | None = None
     status: TaskStatus = TaskStatus.PENDING
     logs: list[LogEntry] = field(default_factory=list)
     extraction_id: str | None = None
@@ -50,7 +52,10 @@ class ExtractionTask:
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def add_log(
-        self, message: str, log_type: LogType = LogType.INFO, progress: int | None = None
+        self,
+        message: str,
+        log_type: LogType = LogType.INFO,
+        progress: int | None = None,
     ) -> LogEntry:
         entry = LogEntry(type=log_type, message=message, progress=progress)
         self.logs.append(entry)
@@ -66,6 +71,24 @@ _task_subscribers: dict[str, list[asyncio.Queue]] = {}
 def create_task(campaign_id: str, query: str) -> ExtractionTask:
     task_id = str(uuid.uuid4())[:8]
     task = ExtractionTask(id=task_id, campaign_id=campaign_id, query=query)
+    _tasks[task_id] = task
+    _task_events[task_id] = asyncio.Event()
+    _task_subscribers[task_id] = []
+    return task
+
+
+def create_task_for_lead(
+    campaign_id: str, query: str, lead_id: str, lead_index: int
+) -> ExtractionTask:
+    """Create extraction task for a specific lead with index for log prefixing."""
+    task_id = str(uuid.uuid4())[:8]
+    task = ExtractionTask(
+        id=task_id,
+        campaign_id=campaign_id,
+        query=query,
+        lead_id=lead_id,
+        lead_index=lead_index,
+    )
     _tasks[task_id] = task
     _task_events[task_id] = asyncio.Event()
     _task_subscribers[task_id] = []
@@ -148,6 +171,9 @@ def set_task_running(task_id: str) -> None:
 
 
 def create_log_callback(task_id: str) -> Callable[[str, LogType, int | None], None]:
-    def callback(message: str, log_type: LogType = LogType.INFO, progress: int | None = None):
+    def callback(
+        message: str, log_type: LogType = LogType.INFO, progress: int | None = None
+    ):
         asyncio.create_task(add_log(task_id, message, log_type, progress))
+
     return callback
