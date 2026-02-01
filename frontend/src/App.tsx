@@ -8,13 +8,11 @@ import { CyberFileDropZone } from './components/CyberFileDropZone'
 import { CyberLeadsInput } from './components/CyberLeadsInput'
 import { CyberProfileCard } from './components/CyberProfileCard'
 import { CyberProposals } from './components/CyberProposals'
-import { CyberSocialUrlsInput } from './components/CyberSocialUrlsInput'
 import { CyberTabs } from './components/CyberTabs'
 import { CampaignProvider, useCampaign } from './context/CampaignContext'
 import { useExtractionStream } from './hooks/useExtractionStream'
 import { useMultipleExtractionStreams } from './hooks/useMultipleExtractionStreams'
 import type { Lead } from './types/campaign'
-import type { SocialUrls } from './types/profile'
 
 function AppContent() {
   const {
@@ -180,15 +178,6 @@ function AppContent() {
     addLog('Profile reset. Awaiting new payload...')
   }
 
-  const handleSocialUrlsChange = (urls: SocialUrls) => {
-    if (!currentCampaign?.profile) return
-
-    updateProfile({
-      ...currentCampaign.profile,
-      social_urls: urls,
-    })
-  }
-
   const handleParseLeads = async (rawText: string): Promise<boolean> => {
     if (!currentCampaign) return false
 
@@ -244,14 +233,6 @@ function AppContent() {
   }
 
   const profile = currentCampaign?.profile
-  const socialUrls: SocialUrls = {
-    linkedin: profile?.social_urls?.linkedin || '',
-    twitter: profile?.social_urls?.twitter || '',
-    github: profile?.social_urls?.github || '',
-    instagram: profile?.social_urls?.instagram || '',
-    facebook: profile?.social_urls?.facebook || '',
-    website: profile?.social_urls?.website || '',
-  }
 
   // Show empty state if no campaigns
   const showEmptyState = !isLoadingList && campaigns.length === 0
@@ -371,9 +352,9 @@ function AppContent() {
 
               {/* Tab Content */}
               {activeTab === 'founder_identity' ? (
-                <div className="grid lg:grid-cols-[1fr,400px] gap-8">
-                  {/* Left Column - Upload or Profile */}
-                  <div>
+                <div>
+                  {/* Upload or Profile */}
+                  <div className="max-w-3xl">
                     {!profile || !profile.name ? (
                       canEditCurrentCampaign ? (
                         <CyberFileDropZone
@@ -411,16 +392,6 @@ function AppContent() {
                       </div>
                     )}
                   </div>
-
-                  {/* Right Column - Social Inputs */}
-                  {canEditCurrentCampaign && (
-                    <div className="lg:sticky lg:top-24 h-fit">
-                      <CyberSocialUrlsInput
-                        urls={socialUrls}
-                        onChange={handleSocialUrlsChange}
-                      />
-                    </div>
-                  )}
                 </div>
               ) : activeTab === 'leads' ? (
                 <CyberLeadsInput
