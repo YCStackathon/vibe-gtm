@@ -130,17 +130,18 @@ John Smith Acme Corp
 - Ernie Ho Namecard.ai CEO
 - John Smith Acme Corp
 
-#### Option B: Email Integration (Coming Soon)
+#### Option B: Email Integration
 Send an email with leads to:
 ```
 leads-{campaignId}@gtm.useparadigm.app
 ```
 
 The system automatically:
-1. Receives the email
+1. **Resend** receives the inbound email via webhook
 2. Extracts lead information from the email body
 3. Parses it just like manual input
 4. Adds leads to the specified campaign
+5. Starts processing immediately
 
 ### 4. Parallel Lead Extraction
 
@@ -219,17 +220,18 @@ The email integration provides a convenient way to add leads without opening the
 ```mermaid
 sequenceDiagram
     participant User
-    participant Email as leads-{campaignId}@gtm.useparadigm.app
-    participant Backend
+    participant Resend as Resend<br/>(Inbound Email)
+    participant Backend as FastAPI Backend
     participant Parser as OpenAI Parser
-    participant Campaign as Campaign DB
+    participant DB as MongoDB
 
-    User->>Email: Send email with lead list
-    Email->>Backend: Webhook receives email
-    Backend->>Backend: Extract email body
+    User->>Resend: Send email to<br/>leads-{campaignId}@gtm.useparadigm.app
+    Resend->>Backend: POST /api/webhooks/resend/inbound
+    Backend->>Backend: Extract campaign ID from recipient
+    Backend->>Backend: Extract lead text from email body
     Backend->>Parser: Parse lead text
     Parser-->>Backend: Return parsed queries
-    Backend->>Campaign: Add leads to campaign
+    Backend->>DB: Add leads to campaign
     Backend->>Backend: Trigger extraction pipeline
     Note over Backend: Same flow as manual input
 ```
@@ -247,9 +249,10 @@ sequenceDiagram
 | Stage | Input | Processing | Output |
 |-------|-------|------------|--------|
 | Identity | PDF document | Reducto extraction | Founder claims |
-| Lead Input | Raw text / Email | OpenAI parsing | Search queries |
+| Lead Input | Raw text / Email (via Resend) | OpenAI parsing | Search queries |
 | Extraction | Search query | Firecrawl + AI | Lead claims with sources |
 | Matching | Founder + Lead claims | OpenAI analysis | Scored proposal |
+| Notification | Batch complete | Resend email | User notified |
 | Display | Proposals | Sort by score | Ranked list for outreach |
 
 ---
@@ -266,12 +269,14 @@ flowchart LR
         API[FastAPI]
         Pipeline[Extraction Pipeline]
         Matcher[Proposal Matcher]
+        Webhook[Inbound Email Webhook]
     end
 
     subgraph External
         Reducto[Reducto API]
         Firecrawl[Firecrawl API]
         OpenAI[OpenAI API]
+        Resend[Resend API]
     end
 
     subgraph Database
@@ -286,10 +291,20 @@ flowchart LR
     Pipeline --> Reducto
     Matcher --> OpenAI
 
+    Resend -->|Inbound emails| Webhook
+    Webhook --> API
+    API -->|Notifications| Resend
+
     API <--> MongoDB
     Pipeline --> MongoDB
     Matcher --> MongoDB
 ```
+
+**External Services:**
+- **Reducto** - PDF parsing for founder identity extraction
+- **Firecrawl** - Web scraping for LinkedIn, company sites, social profiles
+- **OpenAI** - Lead parsing and proposal matching analysis
+- **Resend** - Inbound email processing + completion notifications
 
 **Collections:**
 - `campaigns` - Campaign metadata and lead list
