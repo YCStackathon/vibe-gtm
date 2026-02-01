@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { extractProfile } from './api/identity'
-import { parseLeads } from './api/leads'
+import { extractLead, parseLeads } from './api/leads'
 import { CyberCampaignSidebar } from './components/CyberCampaignSidebar'
 import { CyberCreateCampaignModal } from './components/CyberCreateCampaignModal'
 import { CyberEmptyState } from './components/CyberEmptyState'
@@ -11,6 +11,8 @@ import { CyberSocialUrlsInput } from './components/CyberSocialUrlsInput'
 import { CyberTabs } from './components/CyberTabs'
 import { CampaignProvider, useCampaign } from './context/CampaignContext'
 import { useExtractionStream } from './hooks/useExtractionStream'
+import { useMultipleExtractionStreams } from './hooks/useMultipleExtractionStreams'
+import type { Lead } from './types/campaign'
 import type { SocialUrls } from './types/profile'
 
 function AppContent() {
@@ -43,6 +45,15 @@ function AppContent() {
 
   const extractionStream = useExtractionStream(extractionTaskId)
   const lastLogIndexRef = useRef(0)
+  const terminalLogsContainerRef = useRef<HTMLDivElement>(null)
+
+  // Multi-stream hook for parallel lead extractions
+  const {
+    combinedLogs: leadLogs,
+    leadStates,
+    startExtraction: startLeadExtraction,
+  } = useMultipleExtractionStreams()
+  const lastLeadLogIndexRef = useRef(0)
 
   // Pipe extraction stream logs into the system log
   useEffect(() => {
@@ -62,6 +73,33 @@ function AppContent() {
       lastLogIndexRef.current = extractionStream.logs.length
     }
   }, [extractionStream.logs])
+
+  // Pipe lead extraction logs into the system log
+  useEffect(() => {
+    const newLogs = leadLogs.slice(lastLeadLogIndexRef.current)
+    if (newLogs.length > 0) {
+      setTerminalLogs((prev) => [
+        ...prev,
+        ...newLogs.map((log) => {
+          const prefix =
+            log.type === 'success' ? '[OK]' :
+            log.type === 'error' ? '[ERR]' :
+            log.type === 'progress' ? `[${log.progress ?? '...'}%]` :
+            '[>]'
+          return `${prefix} ${log.message}`
+        }),
+      ])
+      lastLeadLogIndexRef.current = leadLogs.length
+    }
+  }, [leadLogs])
+
+  // Auto-scroll terminal logs to bottom (only scrolls the container, not the page)
+  useEffect(() => {
+    const container = terminalLogsContainerRef.current
+    if (container) {
+      container.scrollTop = container.scrollHeight
+    }
+  }, [terminalLogs])
 
   // Log extraction completion/error
   useEffect(() => {
@@ -158,9 +196,42 @@ function AppContent() {
     try {
       const response = await parseLeads(rawText)
       const existingLeads = currentCampaign.leads || []
-      const newLeads = [...existingLeads, ...response.queries]
-      updateLeads(newLeads)
-      addLog(`Parsed ${response.queries.length} lead queries`)
+
+      // Create Lead objects with pre-generated IDs
+      const newLeads: Lead[] = response.queries.map((query) => ({
+        id: crypto.randomUUID(),
+        query,
+        extraction_task_id: null,
+        verified_claims_id: null,
+        status: 'pending' as const,
+        error: null,
+      }))
+
+      const allLeads = [...existingLeads, ...newLeads]
+      updateLeads(allLeads)
+      addLog(`Parsed ${newLeads.length} lead queries`)
+
+      // Auto-start extraction for each new lead
+      const startIndex = existingLeads.length
+      for (let i = 0; i < newLeads.length; i++) {
+        const lead = newLeads[i]
+        const globalIndex = startIndex + i
+
+        try {
+          const extractResponse = await extractLead(
+            currentCampaign.id,
+            lead.id,
+            lead.query,
+            globalIndex
+          )
+          startLeadExtraction(lead.id, extractResponse.extraction_task_id)
+          addLog(`Started extraction for lead ${globalIndex + 1}`)
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Unknown error'
+          addLog(`ERROR: Failed to start extraction for lead ${globalIndex + 1}: ${msg}`)
+        }
+      }
+
       return true
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to parse leads'
@@ -264,7 +335,7 @@ function AppContent() {
                   <div className="w-3 h-3 rounded-full bg-green-500/80" />
                   <span className="ml-2 text-[var(--text-secondary)]">System Log</span>
                 </div>
-                <div className="space-y-1 max-h-24 overflow-y-auto">
+                <div ref={terminalLogsContainerRef} className="space-y-1 max-h-24 overflow-y-auto">
                   {terminalLogs.map((log, i) => (
                     <div
                       key={i}
@@ -351,7 +422,8 @@ function AppContent() {
                 </div>
               ) : (
                 <CyberLeadsInput
-                  queries={currentCampaign.leads || []}
+                  leads={currentCampaign.leads || []}
+                  leadStates={leadStates}
                   onParse={handleParseLeads}
                   isParsing={isParsing}
                 />

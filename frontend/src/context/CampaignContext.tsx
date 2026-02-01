@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import * as campaignApi from '../api/campaigns'
-import type { Campaign, CampaignListItem } from '../types/campaign'
+import type { Campaign, CampaignListItem, Lead } from '../types/campaign'
 import type { FounderProfile } from '../types/profile'
 
 interface CampaignContextValue {
@@ -29,7 +29,7 @@ interface CampaignContextValue {
   selectCampaign: (id: string) => Promise<void>
   createCampaign: (name: string) => Promise<void>
   updateProfile: (profile: FounderProfile) => void
-  updateLeads: (leads: string[]) => void
+  updateLeads: (leads: Lead[]) => void
   refreshList: () => Promise<void>
   // Start/stop processing
   startProcessing: () => void
@@ -178,6 +178,7 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
       const fullCampaign: Campaign = {
         ...newCampaign,
         profile: null,
+        whoami_extraction_id: null,
         leads: [],
       }
       campaignCacheRef.current.set(fullCampaign.id, fullCampaign)
@@ -225,7 +226,7 @@ export function CampaignProvider({ children }: { children: ReactNode }) {
     }, DEBOUNCE_MS)
   }, [])
 
-  const updateLeads = useCallback(async (leads: string[]) => {
+  const updateLeads = useCallback(async (leads: Lead[]) => {
     const campaignId = currentCampaignIdRef.current
     if (!campaignId) return
 
