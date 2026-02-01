@@ -94,9 +94,8 @@ async def get_campaign(
         updated_at=doc["updated_at"],
         profile=profile,
         whoami_extraction_id=doc.get("whoami_extraction_id"),
-        leads=doc.get("leads", []),
-        receiving_email=generate_receiving_email(campaign_id),
         leads=leads,
+        receiving_email=generate_receiving_email(campaign_id),
     )
 
 
@@ -164,6 +163,7 @@ async def update_campaign_leads(
         return False
 
 
+async def append_leads_to_campaign(
     db: AsyncIOMotorDatabase, campaign_id: str, new_leads: list[str]
 ) -> bool:
     """Append new leads to existing campaign leads."""
